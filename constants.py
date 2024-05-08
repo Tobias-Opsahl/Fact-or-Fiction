@@ -5,6 +5,7 @@ LOCAL_DATA_PATH = "data/"
 FOX_DATA_PATH = "/fp/projects01/ec30/factkg/"
 
 SAVE_DATAFOLDER = "data/"
+SUBGRAPH_FOLDER = "subgraphs/"
 SIMPLE_FOLDER = "simple/"
 FULL_FOLDER = "full/"
 DPBEDIA_FOLDER = "dbpedia/"

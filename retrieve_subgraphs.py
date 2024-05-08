@@ -1,14 +1,14 @@
+import argparse
 import ast
 import csv
-import json
+import os
 import pickle
 from pathlib import Path
 
-import argparse
 import pandas as pd
-from constants import (DATA_PATH, DBPEDIA_LIGHT_FILENAME, DPBEDIA_FOLDER, FULL_FOLDER, SAVE_DATAFOLDER, TRAIN_FILENAME,
-                       VAL_FILENAME, TEST_FILENAME)
-from glocal_settings import LOCAL, SMALL
+from constants import (DATA_PATH, DBPEDIA_LIGHT_FILENAME, DPBEDIA_FOLDER, FULL_FOLDER, SAVE_DATAFOLDER, SUBGRAPH_FOLDER,
+                       TEST_FILENAME, TRAIN_FILENAME, VAL_FILENAME)
+from glocal_settings import LOCAL
 from utils import get_logger, set_global_log_level
 
 logger = get_logger(__name__)
@@ -19,6 +19,20 @@ class KnowledgeGraph:
         self.kg = kg
 
     def get_direct_subgraph(self, entity_list, fill_if_empty=False):
+        """
+        Finds the direct subgraph, which means the graph with `entity_list` as nodes, and all the direct relations
+        between them as edges.
+        If `fill_if_empty` is True, will use the one-hop (include every relation for the entities) if there was no
+        edges added.
+
+        Args:
+            entity_list (list of str): List of the entity names.
+            fill_if_empty (bool, optional): If True, will fill the nodes with `one-hop` (all the relations for the
+                entities are included) if the graph gets no edges. Defaults to False.
+
+        Returns:
+            dict: Dict representing the graph, om the same format as with FactKG.
+        """
         subgraph = {}
         empty = True
 
@@ -36,65 +50,33 @@ class KnowledgeGraph:
                         subgraph[entity].append(relation)
 
         if empty and fill_if_empty:  # No relations are filled, so we will include the full entity nodes
-            for entity in entity_list:
-                node = self.kg.get(entity)
-                if node is None:
-                    continue
-                for relation, neighbours in self.kg[entity].items():
-                    # `neighbours` is a list of nodes `entity` point to with a `relation`-edge.
-                    subgraph[entity].append(relation)
+            subgraph = self.get_one_hop_subgraph(entity_list)
         return subgraph
 
-    def get_single_subgraph(self, entity, depth=1):
+    def get_one_hop_subgraph(self, entity_list):
         """
-        Retrieve subgraph of node `entity` with edge depth `depth`. Depth first search.
+        Includes all relations for every entity in `entity_list` as a subgraph.
 
         Args:
-            entity (str): Node entity we want subgraph from.
-            depth (int, optional): The amount of edges we want to move away from `entity`.
+            entity_list (list of str): List of the entity names.
 
         Returns:
-            dict: Dict representing the subgraph.
+            dict: Dict representing the graph, om the same format as with FactKG.
         """
         subgraph = {}
-        queue = [(entity, 0)]  # queue of (current entity, current depth)
-        while queue:
-            current_entity, current_depth = queue.pop(0)
-            if current_depth < depth:
-                if not (current_entity in self.kg):
-                    continue
-                subgraph[current_entity] = self.kg[current_entity]
-                for relation, connected_entities in self.kg[current_entity].items():
-                    for next_entity in connected_entities:
-                        if next_entity not in subgraph:
-                            queue.append((next_entity, current_depth + 1))
+        for entity in entity_list:
+            subgraph[entity] = []
+            node = self.kg.get(entity)
+            if node is None:
+                logger.warn(f"Argument {entity} was in `entity_list`, but not in knowledge graph. ")
+                continue
+            for relation, neighbours in self.kg[entity].items():
+                # `neighbours` is a list of nodes `entity` point to with a `relation`-edge.
+                subgraph[entity].append(relation)
         return subgraph
 
-    def get_k_hop_subgraph(self, entities, depth=1):
-        """
-        Finds the subgraphs of multiple entities and combines them to one graph.
 
-        Args:
-            entities (list of str): List of the name of the entities to find subgraphs for and combine.
-            depth (int, optional): Depths to make in subgraph. Defaults to 2.
-
-        Returns:
-            dict: Dict representing the subgraph.
-        """
-        combined_subgraph = {}
-        for entity in entities:
-            subgraph = self.get_subgraph(entity, depth)
-            for head, relations in subgraph.items():
-                if head not in combined_subgraph:
-                    combined_subgraph[head] = {}
-                for rel, tails in relations.items():
-                    if rel not in combined_subgraph[head]:
-                        combined_subgraph[head][rel] = []
-                    combined_subgraph[head][rel].append(tails)
-        return combined_subgraph
-
-
-def find_subgraphs(kg, df, fill_if_empty=False):
+def find_subgraphs(kg, df, method="direct", fill_if_empty=False):
     """
     Find all subgraphs of each datapoint row in `df`.
     This constructs the subgraphs of depth `depth` for each entity in the feature `Entity_set`, for each
@@ -103,6 +85,7 @@ def find_subgraphs(kg, df, fill_if_empty=False):
     Args:
         kg (KnowledgeGraph): Knowledge Graph object with desired knowledge grahp.
         df (pd.DataFrame): Dataframe with the datapoints we want to find subgraphs of.
+        use_direct (str): Either `direct` (uses direct subgraph) or `one_hop` (uses one-hop subgraph).
         fill_if_empty (bool): If True and subgraph has no relations, will use the full entity nodes
             as the subgraph.
 
@@ -117,7 +100,10 @@ def find_subgraphs(kg, df, fill_if_empty=False):
         if ((idx + 1) % 100) == 0:
             logger.info(f"On idx {idx + 1}/{n_datapoints}")
         entities = ast.literal_eval(df["Entity_set"][idx])
-        subgraph = kg.get_direct_subgraph(entities, fill_if_empty=fill_if_empty)
+        if method == "direct":
+            subgraph = kg.get_direct_subgraph(entities, fill_if_empty=fill_if_empty)
+        elif method == "one_hop":
+            subgraph = kg.get_one_hop_subgraph(entities)
         subgraphs[idx] = subgraph
 
     logger.info("Done finding subgraphs")
@@ -143,30 +129,26 @@ def save_subgraph_to_csv(subgraphs, filepath):
 
 
 if __name__ == "__main__":
-    set_global_log_level("debug")
+    set_global_log_level("info")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_type", choices=["train", "val", "test"], default="val")
-    parser.add_argument("--depth", type=int, default=1)
+    parser.add_argument("--dataset_type", choices=["train", "val", "test", "all"], default="all",
+                        help="Dataset split to make subgraph for. ")
+    parser.add_argument("--method", choices=["direct", "one_hop"], default="direct",
+                        help="Use `direct` subgraph (only to other entities) or `one-hop` (to any other node). ")
+    parser.add_argument("--fill_if_empty", type=bool, default=True,
+                        help="If using `direct` subgraph method, this will use `one-hop` method if subgraph is empty. ")
 
     args = parser.parse_args()
 
     if args.dataset_type == "train":
-        filename = TRAIN_FILENAME
+        filenames = [TRAIN_FILENAME]
     elif args.dataset_type == "val":
-        filename = VAL_FILENAME
+        filenames = [VAL_FILENAME]
     elif args.dataset_type == "test":
-        filename = TEST_FILENAME
-
-    df_path = Path(DATA_PATH) / FULL_FOLDER / filename
-    full_df = pd.read_csv(df_path)
-
-    if SMALL:
-        df = full_df.iloc[:10]
-        save_filename = Path(SAVE_DATAFOLDER) / "val_small_1.csv"
-    else:
-        df = full_df
-        save_filename = Path(SAVE_DATAFOLDER) / "full_val_1.csv"
+        filenames = [TEST_FILENAME]
+    elif args.dataset_type == "all":
+        filenames = [TRAIN_FILENAME, VAL_FILENAME, TEST_FILENAME]
 
     kg_path = Path(DATA_PATH) / DPBEDIA_FOLDER / DBPEDIA_LIGHT_FILENAME
     logger.info("Loading knowledge graph...")
@@ -174,8 +156,24 @@ if __name__ == "__main__":
     logger.info("Done loading knowledge graph. ")
     kg_instance = KnowledgeGraph(kg)
 
-    subgraphs = find_subgraphs(kg_instance, df, fill_if_empty=True)
-    save_subgraph_to_csv(subgraphs, save_filename)
+    save_folder = Path(SAVE_DATAFOLDER) / SUBGRAPH_FOLDER
+    os.makedirs(save_folder, exist_ok=True)
+    for filename in filenames:
+        df_path = Path(DATA_PATH) / FULL_FOLDER / filename
+        df = pd.read_csv(df_path)
+
+        if args.method == "direct":
+            if args.fill_if_empty:
+                method_name = "direct_filled"
+            else:
+                method_name = "direct"
+        else:
+            method_name = "one_hop"
+        save_filename = "subgraphs_" + method_name + "_" + filename
+        save_path = save_folder / save_filename
+
+        subgraphs = find_subgraphs(kg_instance, df, method=args.method, fill_if_empty=args.fill_if_empty)
+        save_subgraph_to_csv(subgraphs, save_path)
 
     if LOCAL:
         from IPython import embed
