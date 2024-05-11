@@ -1,2 +1,3 @@
 LOCAL = True
 SMALL = True
+SMALL_SIZE = 150

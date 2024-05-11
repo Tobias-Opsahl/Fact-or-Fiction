@@ -1,9 +1,12 @@
 import logging
 import os
+import pickle
 import random
+from pathlib import Path
 
 import numpy as np
 import torch
+from constants import RESULTS_FOLDER, SAVED_MODEL_FOLDER
 
 
 def set_global_log_level(level):
@@ -75,3 +78,101 @@ def count_parameters(model):
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     frozen_params = total_params - trainable_params
     return total_params, trainable_params, frozen_params
+
+
+def _check_just_file(filename):
+    """
+    Checks that `filename` does not contain a folder, for example `plots/plot.png`. Raises ValueError if it does.
+    Also checks that `filename` is either `str` or `pathtlib.Path`.
+
+    Args:
+        filename (str or pathlib.Path): The filename to check.
+
+    Raises:
+        ValueError: If `filename` contains a folder.
+        TypeError: If `filename` is not of type `str` or `pathlib.Path`.
+    """
+    if isinstance(filename, Path):
+        filename = filename.as_posix()  # Convert to string
+    if not isinstance(filename, str):
+        raise TypeError(f"Filename must be of type `str` or `pathlib.Path`. Was {type(filename)}. ")
+    if "/" in filename or "\\" in filename:
+        message = f"Filename must not be inside a directory, but only be the filename. Was {filename}. "
+        raise ValueError(message)
+
+
+def create_folder(folder_path, exist_ok=True):
+    """
+    Create a folder.
+
+    Args:
+        folder_path (str or pathlib.Path): The folder-path, including the foldername.
+        exist_ok (bool, optional): If True, will not raise Exception if folder already exists. Defaults to True.
+    """
+    os.makedirs(folder_path, exist_ok=exist_ok)
+
+
+def make_file_path(folder, filename, check_folder_exists=True):
+    """
+    Merges a path to a folder `folder` with a filename `filename`.
+    If `check_folder_exists` is True, will create the folder `folder` if it is not there.
+    Argument `filename` can not be inside a folder, it can only be a filename (to ensure that the correct and full
+    folder path gets created).
+
+    Args:
+        folder (str or pathlib.Path): Path to the folder.
+        filename (str or pathlib.Path): Filename of the file. Must not be inside a folder, for example `plots/plot.png`
+            is not allowed, `plots/` should be a part of `folder`.
+        check_folder_exists (bool): If `True`, will check that `folder` exists, and create it if it does not.
+
+    Returns:
+        pathlib.Path: The merged path.
+    """
+    _check_just_file(filename)  # Check that filename does not have a folder.
+    folder_path = Path(folder)
+    if check_folder_exists:
+        create_folder(folder_path, exist_ok=True)
+    file_path = folder_path / filename
+    return file_path
+
+
+def get_model_path(model_name):
+    model_name = model_name.strip().lower()
+    folder_name = SAVED_MODEL_FOLDER
+    filename = f"{model_name}.pth"
+    file_path = make_file_path(folder_name, filename, check_folder_exists=True)
+    return file_path
+
+
+def save_model(state_dict, model_name):
+    """
+    Saves a models state_dict.
+
+    Args:.
+        state_dict (dict): The state-dict of the model to save.
+        model_name (str): String name of the model to save.
+    """
+    file_path = get_model_path(model_name)
+    torch.save(state_dict, file_path)
+
+
+def load_state_dict(model_path, device=None):
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    state_dict = torch.load(model_path, map_location=torch.device(device))
+    return state_dict
+
+
+def save_results(model_name, results_dict):
+    """
+    Saves results to file.
+
+    Args:
+        model_name (str): Name of the file.
+        results_dict (dict): Dictionary of all the results to save.
+    """
+    model_name = model_name.strip().lower()
+    filename = f"{model_name}_results.pkl"
+    file_path = make_file_path(RESULTS_FOLDER, filename, check_folder_exists=True)
+    with open(file_path, "wb") as outfile:
+        pickle.dump(results_dict, outfile)

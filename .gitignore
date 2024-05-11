@@ -1,3 +1,6 @@
-data/
+**/data/
 **/__pycache__
+**/cache/
+**/.DS_Store
+results/
 notes.txt
