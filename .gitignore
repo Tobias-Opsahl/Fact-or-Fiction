@@ -3,4 +3,5 @@
 **/cache/
 **/.DS_Store
 results/
+models/
 notes.txt
