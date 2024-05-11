@@ -6,9 +6,10 @@ import pickle
 from pathlib import Path
 
 import pandas as pd
+from baseline.kg import KG
 from constants import (DATA_PATH, DBPEDIA_LIGHT_FILENAME, DPBEDIA_FOLDER, FULL_FOLDER, SAVE_DATAFOLDER, SUBGRAPH_FOLDER,
                        TEST_FILENAME, TRAIN_FILENAME, VAL_FILENAME)
-from glocal_settings import LOCAL
+from glocal_settings import LOCAL, SMALL, SMALL_SIZE
 from utils import get_logger, set_global_log_level
 
 logger = get_logger(__name__)
@@ -47,7 +48,7 @@ class KnowledgeGraph:
                 for neighbour in neighbours:
                     if neighbour in entity_list:
                         empty = False
-                        subgraph[entity].append(relation)
+                        subgraph[entity].append([relation])
 
         if empty and fill_if_empty:  # No relations are filled, so we will include the full entity nodes
             subgraph = self.get_one_hop_subgraph(entity_list)
@@ -72,7 +73,7 @@ class KnowledgeGraph:
                 continue
             for relation, neighbours in self.kg[entity].items():
                 # `neighbours` is a list of nodes `entity` point to with a `relation`-edge.
-                subgraph[entity].append(relation)
+                subgraph[entity].append([relation])
         return subgraph
 
 
@@ -90,10 +91,10 @@ def find_subgraphs(kg, df, method="direct", fill_if_empty=False):
             as the subgraph.
 
     Returns:
-        dict: Dict of the idx pointing to the subgraphs (which are also dicts)
+        List: List of the subgraphs (which are also dicts)
     """
     logger.info("Begin finding subgraphs. ")
-    subgraphs = {}
+    subgraphs = []
     n_datapoints = len(df)
     for idx in range(n_datapoints):
         logger.debug(f"On idx {idx + 1}/{n_datapoints}")
@@ -104,10 +105,33 @@ def find_subgraphs(kg, df, method="direct", fill_if_empty=False):
             subgraph = kg.get_direct_subgraph(entities, fill_if_empty=fill_if_empty)
         elif method == "one_hop":
             subgraph = kg.get_one_hop_subgraph(entities)
-        subgraphs[idx] = subgraph
+        subgraphs.append(subgraph)
 
     logger.info("Done finding subgraphs")
     return subgraphs
+
+
+def walk_graphs(subgraph_df, kg_instance):
+    """
+    Loops over a df with subgraphs and walks the graphs.
+
+    Args:
+        subgraph_df (pd.Dataframe): The dataframe with subgraphs.
+        kg_instance (KG): The KnowledgeGraph with walk method.
+
+    Returns:
+        list: List of the walked graphs.
+    """
+    walked = []
+    logger.info("Begin walking graphs")
+    for i in range(len(subgraph_df)):
+        subgraph = subgraph_df["subgraph"][i]
+        if (i % 100) == 0:
+            logger.info(f"On idx {i}/{len(subgraph_df)}")
+        walked_graphs = kg_instance.search(list(subgraph.keys()), subgraph)
+        walked.append(walked_graphs)
+    logger.info("Done walking graphs")
+    return walked
 
 
 def save_subgraph_to_csv(subgraphs, filepath):
@@ -136,7 +160,7 @@ if __name__ == "__main__":
                         help="Dataset split to make subgraph for. ")
     parser.add_argument("--method", choices=["direct", "one_hop"], default="direct",
                         help="Use `direct` subgraph (only to other entities) or `one-hop` (to any other node). ")
-    parser.add_argument("--fill_if_empty", type=bool, default=True,
+    parser.add_argument("--fill_if_empty", action="store_true",
                         help="If using `direct` subgraph method, this will use `one-hop` method if subgraph is empty. ")
 
     args = parser.parse_args()
@@ -154,13 +178,16 @@ if __name__ == "__main__":
     logger.info("Loading knowledge graph...")
     kg = pickle.load(open(kg_path, "rb"))
     logger.info("Done loading knowledge graph. ")
-    kg_instance = KnowledgeGraph(kg)
+    knowledge_graph_instance = KnowledgeGraph(kg)
+    kg_instance = KG(kg)
 
     save_folder = Path(SAVE_DATAFOLDER) / SUBGRAPH_FOLDER
     os.makedirs(save_folder, exist_ok=True)
     for filename in filenames:
         df_path = Path(DATA_PATH) / FULL_FOLDER / filename
         df = pd.read_csv(df_path)
+        if SMALL:
+            df = df[:SMALL_SIZE]
 
         if args.method == "direct":
             if args.fill_if_empty:
@@ -170,10 +197,16 @@ if __name__ == "__main__":
         else:
             method_name = "one_hop"
         save_filename = "subgraphs_" + method_name + "_" + filename
+        save_filename = save_filename.replace(".csv", ".pkl")
+        if SMALL:
+            save_filename = "small_" + save_filename
         save_path = save_folder / save_filename
 
-        subgraphs = find_subgraphs(kg_instance, df, method=args.method, fill_if_empty=args.fill_if_empty)
-        save_subgraph_to_csv(subgraphs, save_path)
+        subgraphs = find_subgraphs(knowledge_graph_instance, df, method=args.method, fill_if_empty=args.fill_if_empty)
+        subgraph_df = pd.DataFrame()
+        subgraph_df["subgraph"] = subgraphs
+        subgraph_df["walked"] = walk_graphs(subgraph_df, kg_instance)
+        subgraph_df.to_pickle(save_path)
 
     if LOCAL:
         from IPython import embed
