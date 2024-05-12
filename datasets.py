@@ -1,13 +1,15 @@
+import pickle
 from pathlib import Path
 
 import pandas as pd
 import torch
-from constants import DATA_PATH, DATA_SPLIT_FILENAMES, FULL_FOLDER, SAVE_DATAFOLDER, SIMPLE_FOLDER, SUBGRAPH_FOLDER
+from constants import (BERT_LAST_LAYER_DIM, DATA_PATH, DATA_SPLIT_FILENAMES, EMBEDDINGS_FILENAME, FULL_FOLDER,
+                       SAVE_DATAFOLDER, SIMPLE_FOLDER, SUBGRAPH_FOLDER)
 from glocal_settings import SMALL, SMALL_SIZE
 from torch.utils.data import DataLoader, Dataset
-from torch_geometric.data import Data, Batch
+from torch_geometric.data import Batch, Data
 from transformers import AutoTokenizer
-from utils import get_logger, set_global_log_level, seed_everything
+from utils import get_logger, seed_everything, set_global_log_level
 
 logger = get_logger(__name__)
 
@@ -45,7 +47,7 @@ def get_subgraphs(data_split, subgraph_type):
     """
     Gets subgraph generated for dataset. Must be first found and saved in `retrieve_subgraph.py`.
 
-   Args:
+    Args:
         data_split (str): Which datasplit to load, in `train`, `val` or `test`
         subgraph_type (str): The type of subgraph to use. Must be either `direct` (only the direct entity
             neighbours), `direct_filled` (the direct entity neigbhours, but if it is empty, replace it with
@@ -70,6 +72,21 @@ def get_subgraphs(data_split, subgraph_type):
     if SMALL:
         df = df[:SMALL_SIZE]
     return df
+
+
+def get_precomputed_embeddings():
+    """
+    Gets dict with precomputed embeddings, made with `make_subgraph_embeddings.py`.
+
+    Raises:
+        ValueError: If `data_split` is an unsuported string.
+
+    Returns:
+        dict: The dict of the subgraphs (as strings).
+    """
+    path = Path(SAVE_DATAFOLDER) / EMBEDDINGS_FILENAME
+    embedding_dict = pickle.load(open(path, "rb"))
+    return embedding_dict
 
 
 class FactKGDataset(Dataset):
@@ -133,23 +150,13 @@ def get_dataloader(data_split, subgraph_type=None, model="bert-base-uncased", ma
     return dataloader
 
 
-def get_embedding(text, tokenizer, model):
-    """Generate an embedding for the input text using BERT base uncased model."""
-    # Tokenize and encode the text
-    inputs = tokenizer(text, return_tensors="pt", max_length=512, truncation=True, padding="max_length")
-
-    # Use BERT to generate embeddings
-    with torch.no_grad():  # Disable gradient calculation for inference
-        outputs = model(**inputs)
-
-    # Get the embedding for the [CLS] token (first token)
-    last_hidden_states = outputs.hidden_states[-1]  # The last layer hidden states
-    cls_embedding = last_hidden_states[:, 0, :]
-    # cls_embedding = outputs.last_hidden_state[:, 0, :]
-    return cls_embedding
+def get_embedding(text, embeddings_dict):
+    if embeddings_dict.get(text) is not None:
+        return embeddings_dict["text"]
+    return torch.zeros(BERT_LAST_LAYER_DIM)
 
 
-def convert_to_pyg_format(graph, tokenizer, model):
+def convert_to_pyg_format(graph, embedding_dict):
     if graph == []:
         return Data(x=None, edge_index=None, edge_attr=None)
     node_to_index = {}
@@ -166,17 +173,17 @@ def convert_to_pyg_format(graph, tokenizer, model):
         # Handle node1
         if node1 not in node_to_index:
             node_to_index[node1] = current_node_idx
-            node_features.append(get_embedding(node1, tokenizer, model))
+            node_features.append(get_embedding(node1, embedding_dict))
             current_node_idx += 1
         # Handle node2
         if node2 not in node_to_index:
             node_to_index[node2] = current_node_idx
-            node_features.append(get_embedding(node2, tokenizer, model))
+            node_features.append(get_embedding(node2, embedding_dict))
             current_node_idx += 1
         # Handle edge
         if edge not in edge_to_index:
             edge_to_index[edge] = current_edge_idx
-            edge_features.append(get_embedding(edge, tokenizer, model))
+            edge_features.append(get_embedding(edge, embedding_dict))
             current_edge_idx += 1
 
         # Add to edge indices
@@ -193,7 +200,7 @@ def convert_to_pyg_format(graph, tokenizer, model):
 
 
 class FactKGDatasetGraph(Dataset):
-    def __init__(self, df, evidence, tokenizer, model, max_length=512, mix_graphs=False):
+    def __init__(self, df, evidence, tokenizer, embedding_dict, max_length=512, mix_graphs=False):
         """
         Initialize the dataset. This dataset will return tokenized claims, graphs for the subgraph, and labels.
 
@@ -201,7 +208,7 @@ class FactKGDatasetGraph(Dataset):
             df (pd.DataFrame): FactKG dataframe
             evidence (pd.DataFram): Dataframe with the subgraphs, found by `retrieve_subgraphs.py`.
             tokenizer (transformer tokenizer): The Tokenizer for the model that embeds the graph.
-            model (pytorch model): The model that embeds the graph.
+            embedding_dict (dict): Dictionary mapping the knowledge graph words to embeddings.
             max_length (int, optional): Max length for the tokenizer. Defaults to 512.
             mix_graphs (bool, optional): If `True`, will use both the connected and the walkable graphs found in
                 DBpedia. If `False`, will use connected if it is not empty, else walkable. Defaults to False.
@@ -212,7 +219,7 @@ class FactKGDatasetGraph(Dataset):
         self.subgraphs = evidence["walked"]
         self.evidence = evidence["subgraph"]
         self.tokenizer = tokenizer
-        self.model = model
+        self.embedding_dict = embedding_dict
         self.max_length = max_length
         self.mix_graphs = mix_graphs
 
@@ -228,7 +235,7 @@ class FactKGDatasetGraph(Dataset):
             subgraph = walked["connected"]  # Use connected if it is not empty
         else:
             subgraph = walked["walkable"]  # Empty connceted, use walkable
-        graph = convert_to_pyg_format(subgraph, tokenizer=self.tokenizer, model=self.model)
+        graph = convert_to_pyg_format(subgraph, self.embedding_dict)
 
         label = torch.tensor(self.labels[idx])
         return tokens, graph, label
@@ -244,7 +251,7 @@ def graph_collate_func(batch):
     return token_batch, graph_batch, label_batch
 
 
-def get_graph_dataloader(data_split, subgraph_type, model, model_name="bert-base-uncased", max_length=512,
+def get_graph_dataloader(data_split, subgraph_type, model_name="bert-base-uncased", max_length=512,
                          batch_size=64, shuffle=True, drop_last=True):
     """
     Creates a dataloader for dataset with subgraph representation and tokenized text.
@@ -254,7 +261,6 @@ def get_graph_dataloader(data_split, subgraph_type, model, model_name="bert-base
         subgraph_type (str): The type of subgraph to use. Must be either `direct` (only the direct entity
             neighbours), `direct_filled` (the direct entity neigbhours, but if it is empty, replace it with
             all of the entity edges if the entities) or `one_hop` (all of the entity edges).
-        model (pytorch.Model): The actual model, to generate embeddings in the
         model_name (str, optional): Name of model, in order to get tokenizer. Defaults to "bert-base-uncased".
         max_length (int, optional): Max tokenizer length. Defaults to 512.
         batch_size (int, optional): Batch size to dataloader. Defaults to 128.
@@ -266,9 +272,10 @@ def get_graph_dataloader(data_split, subgraph_type, model, model_name="bert-base
     """
     df = get_df(data_split, full=True)
     subgraphs = get_subgraphs(data_split, subgraph_type)
+    embedding_dict = get_precomputed_embeddings()
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    dataset = FactKGDatasetGraph(df, subgraphs, tokenizer, model, max_length)
+    dataset = FactKGDatasetGraph(df, subgraphs, tokenizer, embedding_dict=embedding_dict, max_length=max_length)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last,
                             collate_fn=graph_collate_func)
     return dataloader
