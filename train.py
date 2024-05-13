@@ -8,8 +8,60 @@ from utils import get_logger, save_model
 logger = get_logger(__name__)
 
 
-def train_simple(model, criterion, optimizer, train_loader, val_loader=None, n_epochs=10, scheduler=None,
-                 n_early_stop=None, save_models=True, device=None, non_blocking=False, verbose=1):
+def run_epoch_simple(train, dataloader, optimizer, model, criterion, device):
+    total_loss = 0
+    total_correct = 0
+    if train:
+        model.train()
+    else:
+        model.eval()
+
+    for inputs in dataloader:
+        batch = inputs.to(device)
+
+        optimizer.zero_grad()
+        outputs = model(**batch)
+        loss = outputs.loss
+        if train:
+            loss.backward()
+            optimizer.step()
+
+        total_loss += loss.item() * batch["input_ids"].size(0)
+        probabilities = torch.softmax(outputs.logits, dim=1)
+        preds = torch.argmax(probabilities, dim=1)
+        total_correct += (preds == batch["labels"]).sum().item()
+    return total_loss, total_correct
+
+
+def run_epoch_qa_gnn(train, dataloader, optimizer, model, criterion, device):
+    total_loss = 0
+    total_correct = 0
+    if train:
+        model.train()
+    else:
+        model.eval()
+
+    for inputs, data_graph, labels in dataloader:
+        batch = inputs.to(device)
+        labels = labels.to(device)
+
+        optimizer.zero_grad()
+        outputs = model(batch, data_graph)
+
+        loss = criterion(outputs, labels)
+        if train:
+            loss.backward()
+            optimizer.step()
+
+        total_loss += loss.item() * batch["input_ids"].size(0)
+        probabilities = torch.sigmoid(outputs)
+        preds = (probabilities > 0.5).int()
+        total_correct += (preds == labels).sum().item()
+    return total_loss, total_correct
+
+
+def train(model, criterion, optimizer, qa_gnn, train_loader, val_loader=None, n_epochs=10, scheduler=None,
+          n_early_stop=None, save_models=True, device=None, non_blocking=False, verbose=1):
     """
     Trains a model and calculate training and valudation stats, given the model, loader, optimizer
     and some hyperparameters.
@@ -18,6 +70,7 @@ def train_simple(model, criterion, optimizer, train_loader, val_loader=None, n_e
         model (model): The model to train. Freeze layers ahead of calling this function.
         criterion (callable): Pytorch loss function.
         optimizer (optim): Pytorch Optimizer.
+        qa_gnn (bool): Wether the model is a QA-GNN model with graphs (True), or a language model (False).
         train_loader (dataloader): Data loader for training set
         val_loader (dataloader, optional): Optinal validation data loader.
             If not None, will calculate validation loss and accuracy after each epoch.
@@ -57,27 +110,14 @@ def train_simple(model, criterion, optimizer, train_loader, val_loader=None, n_e
         logger.info(f"Starting training with device {device}.")
 
     for epoch in range(n_epochs):  # Train
-        train_loss = 0
-        train_correct = 0
-        model.train()
-        for inputs, labels in train_loader:
-            batch = {}
-            batch["input_ids"] = inputs["input_ids"].to(device).squeeze(1)
-            batch["attention_mask"] = inputs["attention_mask"].to(device).squeeze(1)
-            batch["labels"] = labels.to(device)
-            batch["token_type_ids"] = inputs["token_type_ids"].to(device).squeeze(1)
-
-            optimizer.zero_grad()
-            outputs = model(**batch)
-
-            loss = criterion(outputs.logits, labels)
-            loss.backward()
-            optimizer.step()
-
-            train_loss += loss.item() * batch["input_ids"].size(0)
-            _, preds = torch.max(outputs.logits, 1)
-            train_correct += (preds == labels).sum().item()
-
+        if qa_gnn:
+            train_loss, train_correct = run_epoch_qa_gnn(
+                train=True, dataloader=train_loader, optimizer=optimizer, model=model,
+                criterion=criterion, device=device)
+        else:
+            train_loss, train_correct = run_epoch_simple(
+                train=True, dataloader=train_loader, optimizer=optimizer, model=model,
+                criterion=criterion, device=device)
         average_train_loss = train_loss / len(train_loader.dataset)
         train_accuracy = 100 * train_correct / len(train_loader.dataset)
         train_class_loss_list.append(average_train_loss)
@@ -85,24 +125,14 @@ def train_simple(model, criterion, optimizer, train_loader, val_loader=None, n_e
 
         if val_loader is not None:  # Eval
             with torch.no_grad():
-                model.eval()
-                val_loss = 0
-                val_correct = 0
-                for inputs, labels in val_loader:
-                    batch = {}
-                    batch["input_ids"] = inputs["input_ids"].to(device).squeeze(1)
-                    batch["attention_mask"] = inputs["attention_mask"].to(device).squeeze(1)
-                    batch["labels"] = labels.to(device)
-                    batch["token_type_ids"] = inputs["token_type_ids"].to(device).squeeze(1)
-
-                    optimizer.zero_grad()
-                    outputs = model(**batch)
-
-                    loss = criterion(outputs.logits, labels)
-
-                    val_loss += loss.item() * batch["input_ids"].size(0)
-                    _, preds = torch.max(outputs.logits, 1)
-                    val_correct += (preds == labels).sum().item()
+                if qa_gnn:
+                    val_loss, val_correct = run_epoch_qa_gnn(
+                        train=False, dataloader=val_loader, optimizer=optimizer, model=model,
+                        criterion=criterion, device=device)
+                else:
+                    val_loss, val_correct = run_epoch_simple(
+                        train=False, dataloader=val_loader, optimizer=optimizer, model=model,
+                        criterion=criterion, device=device)
 
                 average_val_loss = val_loss / len(val_loader.dataset)
                 val_accuracy = 100 * val_correct / len(val_loader.dataset)
