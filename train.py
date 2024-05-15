@@ -8,7 +8,7 @@ from utils import get_logger, save_model
 logger = get_logger(__name__)
 
 
-def run_epoch_simple(train, dataloader, optimizer, model, criterion, device):
+def run_epoch_simple(train, dataloader, optimizer, model, device):
     total_loss = 0
     total_correct = 0
     if train:
@@ -43,6 +43,7 @@ def run_epoch_qa_gnn(train, dataloader, optimizer, model, criterion, device):
 
     for inputs, data_graph, labels in dataloader:
         batch = inputs.to(device)
+        data_graph = data_graph.to(device)
         labels = labels.to(device)
 
         optimizer.zero_grad()
@@ -116,8 +117,7 @@ def train(model, criterion, optimizer, qa_gnn, train_loader, val_loader=None, n_
                 criterion=criterion, device=device)
         else:
             train_loss, train_correct = run_epoch_simple(
-                train=True, dataloader=train_loader, optimizer=optimizer, model=model,
-                criterion=criterion, device=device)
+                train=True, dataloader=train_loader, optimizer=optimizer, model=model, device=device)
         average_train_loss = train_loss / len(train_loader.dataset)
         train_accuracy = 100 * train_correct / len(train_loader.dataset)
         train_class_loss_list.append(average_train_loss)
@@ -131,8 +131,7 @@ def train(model, criterion, optimizer, qa_gnn, train_loader, val_loader=None, n_
                         criterion=criterion, device=device)
                 else:
                     val_loss, val_correct = run_epoch_simple(
-                        train=False, dataloader=val_loader, optimizer=optimizer, model=model,
-                        criterion=criterion, device=device)
+                        train=False, dataloader=val_loader, optimizer=optimizer, model=model, device=device)
 
                 average_val_loss = val_loss / len(val_loader.dataset)
                 val_accuracy = 100 * val_correct / len(val_loader.dataset)

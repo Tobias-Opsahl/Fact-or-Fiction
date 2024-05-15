@@ -14,7 +14,7 @@ from utils import get_logger, seed_everything, set_global_log_level
 logger = get_logger(__name__)
 
 
-def calculate_embeddings(text, tokenizer, model, device):
+def calculate_embeddings(text, tokenizer, model):
     """
     Calculate embeddings for text, given a tokenizer and a model
 
@@ -54,7 +54,7 @@ def get_entity_and_relations_from_walked_graph(graph):
     return nodes, relations
 
 
-def get_all_embeddings(subgraph_df, tokenizer, model, device, batch_size=32):
+def get_all_embeddings(subgraph_df, tokenizer, model, batch_size=32):
     file_path = Path(SAVE_DATAFOLDER) / EMBEDDINGS_FILENAME
     if os.path.exists(file_path):
         embedding_dict = get_precomputed_embeddings()
@@ -76,9 +76,10 @@ def get_all_embeddings(subgraph_df, tokenizer, model, device, batch_size=32):
     n_text = len(all_text)
     logger.info(f"Begin calculating embeddings for {n_text} new words, out of {n_text_from_df} words found in graphs. ")
     for i in range(0, n_text, batch_size):
-        logger.info(f"On idx {i}/{n_text}")
+        if (i % 1) == 0:
+            logger.info(f"On idx {i}/{n_text}")
         batch_texts = all_text[i:i + batch_size]
-        embeddings = calculate_embeddings(batch_texts, tokenizer, model, device)
+        embeddings = calculate_embeddings(batch_texts, tokenizer, model)
         for text, embedding in zip(batch_texts, embeddings):
             embedding_dict[text] = embedding.cpu().numpy()  # Move embeddings to CPU and convert to numpy for storage
 
@@ -111,8 +112,9 @@ if __name__ == "__main__":
 
     for dataset_type in dataset_types:
         subgraph_df = get_subgraphs(dataset_type, args.subgraph_type)
-        model = get_bert_model("bert")
-        embeddings = get_all_embeddings(subgraph_df, tokenizer, model, device, batch_size=args.batch_size)
+        model = get_bert_model("bert").to(device)
+        embeddings = get_all_embeddings(subgraph_df, tokenizer, model, batch_size=args.batch_size)
 
-    from IPython import embed
-    embed()
+    if LOCAL:
+        from IPython import embed
+        embed()

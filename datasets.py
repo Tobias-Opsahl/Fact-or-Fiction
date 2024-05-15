@@ -185,8 +185,8 @@ def get_embedding(text, embeddings_dict):
 
 
 def convert_to_pyg_format(graph, embedding_dict):
-    # if graph == []:
-    #     return Data(x=[], edge_index=[], edge_attr=[])
+    if graph == []:
+        return Data(x=torch.tensor([]).int(), edge_index=torch.tensor([]).int(), edge_attr=torch.tensor([]).int())
     node_to_index = {}  # Node text to int mapping
     edge_to_index = {}  # Same for edges
     node_features = []  # List of embeddings

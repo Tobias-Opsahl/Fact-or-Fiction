@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 from baseline.kg import KG
-from constants import (DATA_PATH, DBPEDIA_LIGHT_FILENAME, DPBEDIA_FOLDER, FULL_FOLDER, SAVE_DATAFOLDER, SUBGRAPH_FOLDER,
+from constants import (DATA_PATH, DBPEDIA_LIGHT_FILENAME, DBPEDIA_FOLDER, FULL_FOLDER, SAVE_DATAFOLDER, SUBGRAPH_FOLDER,
                        TEST_FILENAME, TRAIN_FILENAME, VAL_FILENAME)
 from glocal_settings import LOCAL, SMALL, SMALL_SIZE
 from utils import get_logger, set_global_log_level
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     elif args.dataset_type == "all":
         filenames = [TRAIN_FILENAME, VAL_FILENAME, TEST_FILENAME]
 
-    kg_path = Path(DATA_PATH) / DPBEDIA_FOLDER / DBPEDIA_LIGHT_FILENAME
+    kg_path = Path(DATA_PATH) / DBPEDIA_FOLDER / DBPEDIA_LIGHT_FILENAME
     logger.info("Loading knowledge graph...")
     kg = pickle.load(open(kg_path, "rb"))
     logger.info("Done loading knowledge graph. ")
