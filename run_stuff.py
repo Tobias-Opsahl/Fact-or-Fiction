@@ -18,9 +18,18 @@ def get_args():
     parser.add_argument("--model_name", type=str, help="The name of the model, will be saved to file. ")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--learning_rate", type=float, default=0.0001, help="learning rate")
-    parser.add_argument("--n_epochs", type=int, default=1, help="The amount of epochs to train for. ")
-    parser.add_argument("--freeze", action="store_true", help="Wether or not to freeze basemodel")
+    parser.add_argument("--n_epochs", type=int, default=2, help="The amount of epochs to train for. ")
     parser.add_argument("--qa_gnn", action="store_true", help="Will use QA-GNN model. If not, will fine tune Bert.")
+
+    parser.add_argument("--freeze_base_model", action="store_true", help="Freeze bert base model. ")
+    parser.add_argument("--freeze_up_to_pooler", action="store_true", help="Freeze bert up to last pooling layer. ")
+    parser.add_argument("--bert_dropout", type=float, default=0, help="Dropout rate for bert classification layer. ")
+    parser.add_argument("--gnn_dropout", type=float, default=0.3, help="Dropout rate for GNN layers. ")
+    parser.add_argument("--n_gnn_layers", type=int, default=2, help="Number of GNN layers in QA-GNN. ")
+    parser.add_argument("--gnn_batch_norm", action="store_true", help="Use Batch Norm between GNN layers. ")
+    parser.add_argument("--gnn_hidden_dim", type=int, default=256, help="Size if hidden dimension in GNN layers. ")
+    parser.add_argument("--gnn_out_features", type=int, default=256, help="Size of GNNs last layers output. ")
+    parser.add_argument("--vectorized", action="store_true", help="Vectorize GNN processing. ")
 
     help = "The type of subgraph to load. `none`: no subgraphs. `direct`: Only directly connected subgraphs. "
     help += "`direct_filled`: Direct subgraph if they exists, else the one-neigbhour of every entity. "
@@ -60,8 +69,11 @@ if __name__ == "__main__":
         test_loader = get_graph_dataloader(
             "test", subgraph_type=args.subgraph_type, batch_size=args.batch_size, mix_graphs=args.mix_graphs,
             shuffle=False, drop_last=False)
-        model_name = "qa_gnn_" + ("mixed" if args.mix_graphs else "")
-        model = QAGNN(model_name, hidden_dim=32, out_features=16, dropout=0.6)
+        model = QAGNN(
+            args.model_name, n_gnn_layers=args.n_gnn_layers, gnn_hidden_dim=args.gnn_hidden_dim,
+            gnn_out_features=args.gnn_out_features, gnn_batch_norm=args.gnn_batch_norm,
+            freeze_base_model=args.freeze_base_model, freeze_up_to_pooler=args.freeze_up_to_pooler,
+            gnn_dropout=args.gnn_dropout, vectorized=args.vectorized)
     else:
         train_loader = get_dataloader(
             "train", args.subgraph_type, subgraph_to_use=args.subgraph_to_use, batch_size=args.batch_size)
@@ -70,8 +82,9 @@ if __name__ == "__main__":
         test_loader = get_dataloader(
             "test", args.subgraph_type, subgraph_to_use=args.subgraph_to_use, batch_size=args.batch_size, shuffle=False,
             drop_last=False)
-        model_name = "bert_" + str(args.subgraph_type)
-        model = get_bert_model(model_name, freeze=args.freeze)
+        model = get_bert_model(
+            args.model_name, include_classifier=True, num_labels=2, freeze_base_model=args.freeze_base_model,
+            freeze_up_to_pooler=args.freeze_up_to_pooler, dropout_rate=args.bert_dropout)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
     lr_scheduler = transformers.get_linear_schedule_with_warmup(
