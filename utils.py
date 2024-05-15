@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from constants import RESULTS_FOLDER, SAVED_MODEL_FOLDER
+from glocal_settings import ML_NODES
 
 
 def set_global_log_level(level):
@@ -58,10 +59,14 @@ def seed_everything(seed=57):
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
     os.environ["PYTHONHASHSEED"] = str(seed)
     torch.mps.manual_seed(seed)
-    torch.use_deterministic_algorithms(True)
+    if ML_NODES:
+        torch.backends.cudnn.deterministic = False
+        torch.use_deterministic_algorithms(False)
+    else:
+        torch.backends.cudnn.deterministic = True
+        torch.use_deterministic_algorithms(True)
 
 
 def count_parameters(model):
@@ -163,16 +168,35 @@ def load_state_dict(model_path, device=None):
     return state_dict
 
 
-def save_results(model_name, results_dict):
+def save_history(model_name, history, dataset_size="full"):
     """
-    Saves results to file.
+    Save a history dictionary from training.
 
     Args:
-        model_name (str): Name of the file.
-        results_dict (dict): Dictionary of all the results to save.
+        model_name (str): The name of the model whos history is being loaded.
+        history (dict): The histories to save.
+        dataset_size (str): The size of the dataset used.
     """
-    model_name = model_name.strip().lower()
-    filename = f"{model_name}_results.pkl"
-    file_path = make_file_path(RESULTS_FOLDER, filename, check_folder_exists=True)
+    folder_name = Path(RESULTS_FOLDER) / str(dataset_size)
+    filename = model_name + "_history.pkl"
+    file_path = make_file_path(folder_name, filename, check_folder_exists=True)
     with open(file_path, "wb") as outfile:
-        pickle.dump(results_dict, outfile)
+        pickle.dump(history, outfile)
+
+
+def load_history(model_name, dataset_size="full"):
+    """
+    Load models history, made by `src/evaluation.py`.
+
+    Args:
+        model_name (str): The name of the model whos history is being loaded.
+        dataset_size (str): The size of the dataset used.
+
+    Returns:
+        dict: Dictionary of history
+    """
+    folder_name = Path(RESULTS_FOLDER) / str(dataset_size)
+    filename = model_name + "_history.pkl"
+    file_path = make_file_path(folder_name, filename, check_folder_exists=False)
+    history = pickle.load(open(file_path, "rb"))
+    return history
