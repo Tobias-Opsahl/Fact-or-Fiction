@@ -185,8 +185,21 @@ def get_embedding(text, embeddings_dict):
 
 
 def convert_to_pyg_format(graph, embedding_dict):
-    if graph == []:
-        return Data(x=torch.tensor([]).int(), edge_index=torch.tensor([]).int(), edge_attr=torch.tensor([]).int())
+    """
+    Convert graph on DBpedia dict format to torch_embedding.data format, so it can be run in GNN.
+
+    Args:
+        graph (dict): Dict of graph, gotten by calling `kg.search()` on each element in the graph.
+        embedding_dict (dict): Dict mapping words to embeddings, to be used as node and edge features.
+            This should be precomputed.
+
+    Returns:
+        torch_geometric.data: Graph data.
+    """
+    # if graph == []:
+    #     return Data(x=torch.tensor([]).int(), edge_index=torch.tensor([]).int(), edge_attr=torch.tensor([]).int())
+    if graph == []:  # Dummy empty graph. Not actually empty because of vectorized computations.
+        graph = [["none", "none", "none"]]
     node_to_index = {}  # Node text to int mapping
     edge_to_index = {}  # Same for edges
     node_features = []  # List of embeddings

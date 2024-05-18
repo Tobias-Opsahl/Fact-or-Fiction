@@ -61,7 +61,8 @@ class QAGNN(nn.Module):
     Implementation of Quastion Answer Graph Neural Network model
     """
     def __init__(self, model_name, n_gnn_layers=2, gnn_hidden_dim=256, gnn_out_features=256, gnn_batch_norm=True,
-                 freeze_base_model=False, freeze_up_to_pooler=True, gnn_dropout=0.3, vectorized=False):
+                 freeze_base_model=False, freeze_up_to_pooler=True, gnn_dropout=0.3, classifier_dropout=0.2,
+                 vectorized=True):
         """
         Args:
             model_name (str): Name of the model, will be saved as a class variable.
@@ -73,6 +74,7 @@ class QAGNN(nn.Module):
             freeze_base_model (bool, optional): Freeze the base model of the Bert language model. Defaults to False.
             freeze_up_to_pooler (bool, optional): Freeze up to the last part of the Bert model. Defaults to True.
             gnn_dropout (float, optional): Dropout rate for the GNN layers. Defaults to 0.3.
+            classifier_dropout (float, optiona): Dropout rate for the last layer.
 
         Raises:
             ValueError: If `n_gnn_layers` is less than 2.
@@ -87,7 +89,7 @@ class QAGNN(nn.Module):
                                    freeze_up_to_pooler=freeze_up_to_pooler)
 
         self.n_gnn_layers = n_gnn_layers
-        self.gnn_layers = []
+        self.gnn_layers = nn.ModuleList()
         first_gnn_layer = GATConv(self.bert.config.hidden_size, gnn_hidden_dim, dropout=gnn_dropout)
         self.gnn_layers.append(first_gnn_layer)
         for i in range(n_gnn_layers - 2):
@@ -98,11 +100,12 @@ class QAGNN(nn.Module):
 
         self.gnn_batch_norm = gnn_batch_norm
         if gnn_batch_norm:
-            self.gnn_batch_norm_layers = []
+            self.gnn_batch_norm_layers = nn.ModuleList()
             for i in range(n_gnn_layers - 1):
                 batch_norm_layer = nn.BatchNorm1d(gnn_hidden_dim)
                 self.gnn_batch_norm_layers.append(batch_norm_layer)
 
+        self.classsifier_dropout_layer = nn.Dropout(classifier_dropout)
         self.classifier = nn.Linear(gnn_out_features + self.bert.config.hidden_size, 1)
 
     def forward(self, claim_tokens, data_graphs):
@@ -149,5 +152,6 @@ class QAGNN(nn.Module):
             pooled_gnn_output = global_mean_pool(x, batch.batch)  # Pool over all nodes in each graph
             combined_features = torch.cat((pooled_gnn_output, claim_embeddings), dim=1)
 
+        combined_features = self.classsifier_dropout_layer(combined_features)
         out = self.classifier(combined_features)  # [batch_size, 1]
         return out.squeeze()

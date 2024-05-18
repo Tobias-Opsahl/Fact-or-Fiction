@@ -17,14 +17,15 @@ def get_args():
 
     parser.add_argument("--model_name", type=str, help="The name of the model, will be saved to file. ")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
-    parser.add_argument("--learning_rate", type=float, default=0.0001, help="learning rate")
-    parser.add_argument("--n_epochs", type=int, default=2, help="The amount of epochs to train for. ")
+    parser.add_argument("--learning_rate", type=float, default=0.00001, help="learning rate")
+    parser.add_argument("--n_epochs", type=int, default=5, help="The amount of epochs to train for. ")
     parser.add_argument("--qa_gnn", action="store_true", help="Will use QA-GNN model. If not, will fine tune Bert.")
 
     parser.add_argument("--freeze_base_model", action="store_true", help="Freeze bert base model. ")
     parser.add_argument("--freeze_up_to_pooler", action="store_true", help="Freeze bert up to last pooling layer. ")
     parser.add_argument("--bert_dropout", type=float, default=0, help="Dropout rate for bert classification layer. ")
     parser.add_argument("--gnn_dropout", type=float, default=0.3, help="Dropout rate for GNN layers. ")
+    parser.add_argument("--classifier_dropout", type=float, default=0.3, help="Dropout rate for QA-GNN classifier. ")
     parser.add_argument("--n_gnn_layers", type=int, default=2, help="Number of GNN layers in QA-GNN. ")
     parser.add_argument("--gnn_batch_norm", action="store_true", help="Use Batch Norm between GNN layers. ")
     parser.add_argument("--gnn_hidden_dim", type=int, default=256, help="Size if hidden dimension in GNN layers. ")
@@ -73,7 +74,7 @@ if __name__ == "__main__":
             args.model_name, n_gnn_layers=args.n_gnn_layers, gnn_hidden_dim=args.gnn_hidden_dim,
             gnn_out_features=args.gnn_out_features, gnn_batch_norm=args.gnn_batch_norm,
             freeze_base_model=args.freeze_base_model, freeze_up_to_pooler=args.freeze_up_to_pooler,
-            gnn_dropout=args.gnn_dropout, vectorized=args.vectorized)
+            gnn_dropout=args.gnn_dropout, classifier_dropout=args.classifier_dropout, vectorized=True)
     else:
         train_loader = get_dataloader(
             "train", args.subgraph_type, subgraph_to_use=args.subgraph_to_use, batch_size=args.batch_size)
@@ -96,7 +97,9 @@ if __name__ == "__main__":
         model=model, criterion=criterion, optimizer=optimizer, qa_gnn=args.qa_gnn, train_loader=train_loader,
         val_loader=val_loader, n_epochs=args.n_epochs, scheduler=lr_scheduler)
 
+    logger.info(f"Loading best model state dict from epoch {history['best_epoch']}...")
     model.load_state_dict(models_dict["best_model_state_dict"])
+    logger.info("Done loading state dict. ")
     with torch.no_grad():
         if args.qa_gnn:
             test_loss, test_correct = run_epoch_qa_gnn(
@@ -106,7 +109,8 @@ if __name__ == "__main__":
             test_loss, test_correct, = run_epoch_simple(
                 train=False, dataloader=test_loader, optimizer=optimizer, model=model, device=device)
         test_accuracy = test_correct / len(test_loader.dataset)
+        average_test_loss = test_loss / len(test_loader.dataset)
     history["test_accuracy"] = test_accuracy
     dataset_size = "full" if not SMALL else SMALL_SIZE
     save_history(args.model_name, history, dataset_size=dataset_size)
-    logger.info(f"Model \"{args.model_name}\": Test accuracy: {test_accuracy * 100}%, {test_loss=:.4f}. ")
+    logger.info(f"Model \"{args.model_name}\": Test accuracy: {test_accuracy * 100:.4f}%, {average_test_loss=:.4f}. ")
