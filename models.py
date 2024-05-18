@@ -109,7 +109,6 @@ class QAGNN(nn.Module):
         self.classifier = nn.Linear(gnn_out_features + self.bert.config.hidden_size, 1)
 
     def forward(self, claim_tokens, data_graphs):
-
         claim_outputs = self.bert(**claim_tokens)
         claim_embeddings = claim_outputs.last_hidden_state[:, 0]  # Using the [CLS] token's embedding
 

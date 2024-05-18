@@ -5,38 +5,13 @@ from pathlib import Path
 
 import torch
 from constants import EMBEDDINGS_FILENAME, SAVE_DATAFOLDER, TEST_FILENAME, TRAIN_FILENAME, VAL_FILENAME
-from datasets import get_precomputed_embeddings, get_subgraphs
+from datasets import get_precomputed_embeddings, get_subgraphs, calculate_embeddings
 from glocal_settings import LOCAL, SMALL, SMALL_SIZE
 from models import get_bert_model
 from transformers import AutoTokenizer
 from utils import get_logger, seed_everything, set_global_log_level
 
 logger = get_logger(__name__)
-
-
-def calculate_embeddings(text, tokenizer, model):
-    """
-    Calculate embeddings for text, given a tokenizer and a model
-
-    Args:
-        text (list of str): List of the strings to make embeddings for.
-        tokenizer (tokenizer): The tokenizer.
-        model (pytorch model): The model.
-        device (str): The device, "cpu" or "cuda".
-
-    Returns:
-        dict: Dict mapping from text to embeddings.
-    """
-    inputs = tokenizer(text, return_tensors="pt", max_length=512, truncation=True, padding="max_length")
-    inputs = {key: val.to(model.device) for key, val in inputs.items()}  # Move to device
-
-    with torch.no_grad():
-        outputs = model(**inputs)
-
-    # Get the embedding for the [CLS] token (first token)
-    last_hidden_states = outputs.hidden_states[-1]
-    cls_embedding = last_hidden_states[:, 0, :]
-    return cls_embedding
 
 
 def get_entity_and_relations_from_walked_graph(graph):

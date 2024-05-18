@@ -62,7 +62,7 @@ def get_subgraphs(data_split, subgraph_type):
     split_choices = ["train", "val", "test"]
     if data_split not in split_choices:
         raise ValueError(f"Argument `data_split` must be in {split_choices}. Was {data_split}. ")
-    subgraph_choices = ["direct", "direct_filled", "one_hop"]
+    subgraph_choices = ["direct", "direct_filled", "one_hop", "relevant"]
     if subgraph_type not in subgraph_choices:
         raise ValueError(f"Argument `subgraph_type` must be in {subgraph_choices}. Was {subgraph_type}. ")
 
@@ -72,6 +72,34 @@ def get_subgraphs(data_split, subgraph_type):
     if SMALL:
         df = df[:SMALL_SIZE]
     return df
+
+
+def calculate_embeddings(text, tokenizer, model, with_classifier=True):
+    """
+    Calculate embeddings for text, given a tokenizer and a model
+
+    Args:
+        text (list of str): List of the strings to make embeddings for.
+        tokenizer (tokenizer): The tokenizer.
+        model (pytorch model): The model.
+        with_classifier (bool): If model has classifier (should reach hidden state) or not (output is hidden state).
+
+    Returns:
+        dict: Dict mapping from text to embeddings.
+    """
+    inputs = tokenizer(text, return_tensors="pt", max_length=512, truncation=True, padding="max_length")
+    inputs = {key: val.to(model.device) for key, val in inputs.items()}  # Move to device
+
+    with torch.no_grad():
+        outputs = model(**inputs)
+
+    # Get the embedding for the [CLS] token (first token)
+    if with_classifier:
+        last_hidden_states = outputs.hidden_states[-1]
+    else:
+        last_hidden_states = outputs.last_hidden_state
+    cls_embedding = last_hidden_states[:, 0, :]
+    return cls_embedding
 
 
 def get_precomputed_embeddings():
@@ -178,26 +206,38 @@ def get_dataloader(data_split, subgraph_type=None, subgraph_to_use="discovered",
     return dataloader
 
 
-def get_embedding(text, embeddings_dict):
+def get_embedding(text, online_embeddings, embeddings_dict, tokenizer, model):
+    if online_embeddings:
+        return calculate_embeddings(text, tokenizer, model, with_classifier=False).squeeze()
+
     if embeddings_dict.get(text) is not None:
         return torch.tensor(embeddings_dict[text])
     return torch.zeros(BERT_LAST_LAYER_DIM)
 
 
-def convert_to_pyg_format(graph, embedding_dict):
+def convert_to_pyg_format(graph, online_embeddings, embedding_dict=None, tokenizer=None, model=None):
     """
     Convert graph on DBpedia dict format to torch_embedding.data format, so it can be run in GNN.
 
     Args:
         graph (dict): Dict of graph, gotten by calling `kg.search()` on each element in the graph.
+        online_embeddings (bool): If True, will calculate embeddings for knowledge subgraph online, with a model
+                that might be tuned during the training.
         embedding_dict (dict): Dict mapping words to embeddings, to be used as node and edge features.
             This should be precomputed.
+        tokenizer (tokenizer): Tokenizer to `model` if `online_embeddings`.
+        model (pytroch model): Model to compute embeddings if `online_embeddings`.
 
     Returns:
         torch_geometric.data: Graph data.
     """
-    # if graph == []:
-    #     return Data(x=torch.tensor([]).int(), edge_index=torch.tensor([]).int(), edge_attr=torch.tensor([]).int())
+    if online_embeddings and (model is None or tokenizer is None):
+        message = "Argument `model` or `tokenizer` can not be `None` when `online_embeddings` is True."
+        raise ValueError(message)
+    if not online_embeddings and embedding_dict is None:
+        message = "Argument `embedding_dict` can not be `None` when `online_embeddings` is False."
+        raise ValueError(message)
+
     if graph == []:  # Dummy empty graph. Not actually empty because of vectorized computations.
         graph = [["none", "none", "none"]]
     node_to_index = {}  # Node text to int mapping
@@ -213,17 +253,23 @@ def convert_to_pyg_format(graph, embedding_dict):
 
         if node1 not in node_to_index:
             node_to_index[node1] = current_node_idx
-            node_features.append(get_embedding(node1, embedding_dict))
+            embedding = get_embedding(node1, online_embeddings=online_embeddings, embeddings_dict=embedding_dict,
+                                      tokenizer=tokenizer, model=model)
+            node_features.append(embedding)
             current_node_idx += 1
 
         if node2 not in node_to_index:
             node_to_index[node2] = current_node_idx
-            node_features.append(get_embedding(node2, embedding_dict))
+            embedding = get_embedding(node2, online_embeddings=online_embeddings, embeddings_dict=embedding_dict,
+                                      tokenizer=tokenizer, model=model)
+            node_features.append(embedding)
             current_node_idx += 1
 
         if edge not in edge_to_index:
             edge_to_index[edge] = current_edge_idx
-            edge_features.append(get_embedding(edge, embedding_dict))
+            embedding = get_embedding(edge, online_embeddings=online_embeddings, embeddings_dict=embedding_dict,
+                                      tokenizer=tokenizer, model=model)
+            edge_features.append(embedding)
             current_edge_idx += 1
 
         edge_indices.append([node_to_index[node1], node_to_index[node2]])
@@ -237,23 +283,37 @@ def convert_to_pyg_format(graph, embedding_dict):
 
 
 class FactKGDatasetGraph(Dataset):
-    def __init__(self, df, evidence, embedding_dict, mix_graphs=False):
+    def __init__(self, df, evidence, online_embeddings=False, embedding_dict=None, tokenizer=None, model=None,
+                 mix_graphs=False):
         """
         Initialize the dataset. This dataset will return tokenized claims, graphs for the subgraph, and labels.
 
         Args:
             df (pd.DataFrame): FactKG dataframe
             evidence (pd.DataFram): Dataframe with the subgraphs, found by `retrieve_subgraphs.py`.
-            embedding_dict (dict): Dictionary mapping the knowledge graph words to embeddings.
+            online_embeddings (bool): If True, will calculate embeddings for knowledge subgraph online, with a model
+                that might be tuned during the training.
+            embedding_dict (dict): Dict mapping the knowledge graph words to embeddings if not `online_embeddings`.
+            tokenizer (tokenizer): Tokenizer to `model` if `online_embeddings`.
+            model (pytroch model): Model to compute embeddings if `online_embeddings`.
             mix_graphs (bool, optional): If `True`, will use both the connected and the walkable graphs found in
                 DBpedia. If `False`, will use connected if it is not empty, else walkable. Defaults to False.
         """
+        if online_embeddings and (model is None or tokenizer is None):
+            message = "Argument `model` or `tokenizer` can not be `None` when `online_embeddings` is True."
+            raise ValueError(message)
+        if not online_embeddings and embedding_dict is None:
+            message = "Argument `embedding_dict` can not be `None` when `online_embeddings` is False."
+            raise ValueError(message)
         self.inputs = df["Sentence"]
         self.labels = df["Label"].astype(int)
         self.length = len(df)
         self.subgraphs = evidence["walked"]
         self.evidence = evidence["subgraph"]
+        self.online_embeddings = online_embeddings
         self.embedding_dict = embedding_dict
+        self.tokenizer = tokenizer
+        self.model = model
         self.mix_graphs = mix_graphs
 
     def __getitem__(self, idx):
@@ -267,7 +327,9 @@ class FactKGDatasetGraph(Dataset):
             subgraph = walked["connected"]  # Use connected if it is not empty
         else:
             subgraph = walked["walkable"]  # Empty connceted, use walkable
-        graph = convert_to_pyg_format(subgraph, self.embedding_dict)
+        graph = convert_to_pyg_format(
+            subgraph, online_embeddings=self.online_embeddings, embedding_dict=self.embedding_dict,
+            tokenizer=self.tokenizer, model=self.model)
 
         label = self.labels[idx]
         return claims, graph, label
@@ -291,8 +353,9 @@ class GraphCollateFunc:
         return tokens, graph_batch, labels
 
 
-def get_graph_dataloader(data_split, subgraph_type, bert_model_name="bert-base-uncased", max_length=512,
-                         batch_size=64, shuffle=True, drop_last=True, mix_graphs=False):
+def get_graph_dataloader(
+        data_split, subgraph_type, online_embeddings=False, model=None, bert_model_name="bert-base-uncased",
+        max_length=512, batch_size=64, shuffle=True, drop_last=True, mix_graphs=False):
     """
     Creates a dataloader for dataset with subgraph representation and tokenized text.
 
@@ -300,7 +363,10 @@ def get_graph_dataloader(data_split, subgraph_type, bert_model_name="bert-base-u
         data_split (str): Which datasplit to load, in `train`, `val` or `test`
         subgraph_type (str): The type of subgraph to use. Must be either `direct` (only the direct entity
             neighbours), `direct_filled` (the direct entity neigbhours, but if it is empty, replace it with
-            all of the entity edges if the entities) or `one_hop` (all of the entity edges).
+            all of the entity edges if the entities), `one_hop` (all of the entity edges) or `relevant` (direct plus
+            edges that appears in claim).
+        online_embeddings (bool): If True, will calculate embeddings for knowledge subgraph online, with a model
+                that might be tuned during the training.
         bert_model_name (str, optional): Name of model, in order to get tokenizer. Defaults to "bert-base-uncased".
         max_length (int, optional): Max tokenizer length. Defaults to 512.
         batch_size (int, optional): Batch size to dataloader. Defaults to 128.
@@ -314,24 +380,17 @@ def get_graph_dataloader(data_split, subgraph_type, bert_model_name="bert-base-u
     """
     df = get_df(data_split, full=True)
     subgraphs = get_subgraphs(data_split, subgraph_type)
-    embedding_dict = get_precomputed_embeddings()
 
     tokenizer = AutoTokenizer.from_pretrained(bert_model_name)
     graph_collate_func = GraphCollateFunc(tokenizer, max_length=max_length)
-    dataset = FactKGDatasetGraph(
-        df, subgraphs, embedding_dict=embedding_dict, mix_graphs=mix_graphs)
+    if calculate_embeddings:
+        dataset = FactKGDatasetGraph(
+            df, subgraphs, online_embeddings=online_embeddings, embedding_dict=None,
+            tokenizer=tokenizer, model=model, mix_graphs=mix_graphs)
+    else:
+        embedding_dict = get_precomputed_embeddings()
+        dataset = FactKGDatasetGraph(
+            df, subgraphs, online_embeddings=online_embeddings, embedding_dict=embedding_dict, mix_graphs=mix_graphs)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last,
                             collate_fn=graph_collate_func)
     return dataloader
-
-
-if __name__ == "__main__":
-    set_global_log_level("debug")
-    seed_everything(57)
-
-    from models import get_bert_model
-    model = get_bert_model("bert")
-    dataloader = get_graph_dataloader("val", "direct_filled", model, batch_size=3)
-    a = next(iter(dataloader))
-    from IPython import embed
-    embed()

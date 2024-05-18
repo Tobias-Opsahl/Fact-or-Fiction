@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model_name", type=str, help="The name of the model, will be saved to file. ")
+    parser.add_argument("model_name", type=str, help="The name of the model, will be saved to file. ")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--learning_rate", type=float, default=0.00001, help="learning rate")
     parser.add_argument("--n_epochs", type=int, default=5, help="The amount of epochs to train for. ")
@@ -34,14 +34,15 @@ def get_args():
 
     help = "The type of subgraph to load. `none`: no subgraphs. `direct`: Only directly connected subgraphs. "
     help += "`direct_filled`: Direct subgraph if they exists, else the one-neigbhour of every entity. "
-    help += "`one_hop`: The edges one away from every entity. "
-    parser.add_argument("--subgraph_type", choices=["none", "direct", "direct_filled", "one_hop"],
+    help += "`one_hop`: The edges one away from every entity. `relevant`: direct and edges appearing in the claim. "
+    parser.add_argument("--subgraph_type", choices=["none", "direct", "direct_filled", "one_hop", "relevant"],
                         type=str, default="none", help=help)
     help = "Which subgraph to use for none-qagnn model. `discovered`: Use the raw entity and edges, not walked in "
     help += "graph. `connected`: Only use the connected graph representation found from walking in the knowledge "
     help += "graph. `walkable`: Use all of the walkable paths as subgraph evidence. "
     parser.add_argument("--subgraph_to_use", choices=["discovered", "connected", "walkable"],
                         type=str, default="discovered")
+    parser.add_argument("--online_embeddings", action="store_true", help="Do not use precomputed embeddings.")
     help = "Will use both of the connected and walkable graph (all the time) for qa-gnn model. If not, will use "
     help += "connected if they are not empty, else walkable."
     parser.add_argument("--mix_graphs", action="store_true", help=help)
@@ -63,18 +64,24 @@ if __name__ == "__main__":
         args.subgraph_type = None
 
     if args.qa_gnn:
-        train_loader = get_graph_dataloader(
-            "train", subgraph_type=args.subgraph_type, batch_size=args.batch_size, mix_graphs=args.mix_graphs)
-        val_loader = get_graph_dataloader(
-            "val", subgraph_type=args.subgraph_type, batch_size=args.batch_size, mix_graphs=args.mix_graphs)
-        test_loader = get_graph_dataloader(
-            "test", subgraph_type=args.subgraph_type, batch_size=args.batch_size, mix_graphs=args.mix_graphs,
-            shuffle=False, drop_last=False)
         model = QAGNN(
             args.model_name, n_gnn_layers=args.n_gnn_layers, gnn_hidden_dim=args.gnn_hidden_dim,
             gnn_out_features=args.gnn_out_features, gnn_batch_norm=args.gnn_batch_norm,
             freeze_base_model=args.freeze_base_model, freeze_up_to_pooler=args.freeze_up_to_pooler,
             gnn_dropout=args.gnn_dropout, classifier_dropout=args.classifier_dropout, vectorized=True)
+        if args.online_embeddings:
+            embedding_model = model.bert
+        else:
+            embedding_model = None
+        train_loader = get_graph_dataloader(
+            "train", subgraph_type=args.subgraph_type, online_embeddings=args.online_embeddings,
+            model=embedding_model, batch_size=args.batch_size, mix_graphs=args.mix_graphs)
+        val_loader = get_graph_dataloader(
+            "val", subgraph_type=args.subgraph_type, online_embeddings=args.online_embeddings, model=embedding_model,
+            batch_size=args.batch_size, mix_graphs=args.mix_graphs)
+        test_loader = get_graph_dataloader(
+            "test", subgraph_type=args.subgraph_type, online_embeddings=args.online_embeddings, model=embedding_model,
+            batch_size=args.batch_size, mix_graphs=args.mix_graphs, shuffle=False, drop_last=False)
     else:
         train_loader = get_dataloader(
             "train", args.subgraph_type, subgraph_to_use=args.subgraph_to_use, batch_size=args.batch_size)
