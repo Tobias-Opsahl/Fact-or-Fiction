@@ -5,11 +5,14 @@ import os
 import pickle
 from pathlib import Path
 
+import nltk
 import pandas as pd
+import spacy
 from baseline.kg import KG
-from constants import (DATA_PATH, DBPEDIA_LIGHT_FILENAME, DBPEDIA_FOLDER, FULL_FOLDER, SAVE_DATAFOLDER, SUBGRAPH_FOLDER,
+from constants import (DATA_PATH, DBPEDIA_FOLDER, DBPEDIA_LIGHT_FILENAME, FULL_FOLDER, SAVE_DATAFOLDER, SUBGRAPH_FOLDER,
                        TEST_FILENAME, TRAIN_FILENAME, VAL_FILENAME)
 from glocal_settings import LOCAL, SMALL, SMALL_SIZE
+from nltk.corpus import stopwords
 from utils import get_logger, set_global_log_level
 
 logger = get_logger(__name__)
@@ -76,6 +79,41 @@ class KnowledgeGraph:
                 subgraph[entity].append([relation])
         return subgraph
 
+    def get_relevant_subgraph(self, entity_list, claim, stop_words, nlp):
+        """
+        Get both direct subgraph and node-edge pairs were `edge` is a word in `claim`.
+        This is done in a lemmatized matter.
+
+        Args:
+            entity_list (list of str): List of the entities.
+            claim (str): The claim (sentence or question input).
+            stop_words (list of str): List of words to not search for in edges.
+            nlp (spacy nlp model): NLP model for lemmatization, from spacy.
+
+        Returns:
+            dict: Dict representing graphs.
+        """
+        subgraph = {}
+        doc = nlp(claim)
+        relevant_words = [token.lemma_ for token in doc if token.text.lower() not in stop_words and token.is_alpha]
+
+        for entity in entity_list:
+            subgraph[entity] = []
+            node = self.kg.get(entity)
+            if node is None:
+                logger.warn(f"Argument {entity} was in `entity_list`, but not in knowledge graph. ")
+                continue
+            for relation, neighbours in self.kg[entity].items():
+                # `neighbours` is a list of nodes `entity` point to with a `relation`-edge.
+                if relation.lower() in relevant_words:
+                    subgraph[entity].append([relation])
+
+                for neighbour in neighbours:  # Direct node relation
+                    if neighbour in entity_list:
+                        subgraph[entity].append([relation])
+
+        return subgraph
+
 
 def find_subgraphs(kg, df, method="direct", fill_if_empty=False):
     """
@@ -95,6 +133,12 @@ def find_subgraphs(kg, df, method="direct", fill_if_empty=False):
     """
     logger.info("Begin finding subgraphs. ")
     subgraphs = []
+
+    if method == "relevant":  # Load NLP models
+        nlp = spacy.load("en_core_web_sm")
+        nltk.download('stopwords')
+        stop_words = set(stopwords.words('english'))
+
     n_datapoints = len(df)
     for idx in range(n_datapoints):
         logger.debug(f"On idx {idx + 1}/{n_datapoints}")
@@ -105,6 +149,9 @@ def find_subgraphs(kg, df, method="direct", fill_if_empty=False):
             subgraph = kg.get_direct_subgraph(entities, fill_if_empty=fill_if_empty)
         elif method == "one_hop":
             subgraph = kg.get_one_hop_subgraph(entities)
+        elif method == "relevant":
+            claim = df["Sentence"][idx]
+            subgraph = kg.get_relevant_subgraph(entities, claim=claim, stop_words=stop_words, nlp=nlp)
         subgraphs.append(subgraph)
 
     logger.info("Done finding subgraphs")
@@ -158,7 +205,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_type", choices=["train", "val", "test", "all"], default="all",
                         help="Dataset split to make subgraph for. ")
-    parser.add_argument("--method", choices=["direct", "one_hop"], default="direct",
+    parser.add_argument("--method", choices=["direct", "one_hop", "relevant"], default="direct",
                         help="Use `direct` subgraph (only to other entities) or `one-hop` (to any other node). ")
     parser.add_argument("--fill_if_empty", action="store_true",
                         help="If using `direct` subgraph method, this will use `one-hop` method if subgraph is empty. ")
@@ -194,8 +241,11 @@ if __name__ == "__main__":
                 method_name = "direct_filled"
             else:
                 method_name = "direct"
-        else:
+        elif args.method == "one_hop":
             method_name = "one_hop"
+        elif args.method == "relevant":
+            method_name = "relevant"
+
         save_filename = "subgraphs_" + method_name + "_" + filename
         save_filename = save_filename.replace(".csv", ".pkl")
         if SMALL:
