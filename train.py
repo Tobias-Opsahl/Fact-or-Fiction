@@ -153,7 +153,7 @@ def train(model, criterion, optimizer, qa_gnn, train_loader, val_loader=None, n_
 
                 if average_val_loss < best_val_loss:
                     best_val_loss = average_val_loss
-                    best_epoch_number = epoch
+                    best_epoch_number = epoch + 1
                     best_val_accuracy = val_accuracy
                     best_model = model.state_dict()
 

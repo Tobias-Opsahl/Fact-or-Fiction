@@ -383,7 +383,7 @@ def get_graph_dataloader(
 
     tokenizer = AutoTokenizer.from_pretrained(bert_model_name)
     graph_collate_func = GraphCollateFunc(tokenizer, max_length=max_length)
-    if calculate_embeddings:
+    if online_embeddings:
         dataset = FactKGDatasetGraph(
             df, subgraphs, online_embeddings=online_embeddings, embedding_dict=None,
             tokenizer=tokenizer, model=model, mix_graphs=mix_graphs)

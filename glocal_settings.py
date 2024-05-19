@@ -1,3 +1,4 @@
-LOCAL = True
-SMALL = True
-SMALL_SIZE = 150
+LOCAL = False
+SMALL = False
+SMALL_SIZE = 100
+ML_NODES = False

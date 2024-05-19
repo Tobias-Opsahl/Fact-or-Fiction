@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_type", choices=["train", "val", "test", "all"], default="all",
                         help="Dataset split to make subgraph for. ")
-    parser.add_argument("--subgraph_type", choices=["direct", "direct_filled", "one_hop"], default="direct",
+    parser.add_argument("--subgraph_type", choices=["direct", "direct_filled", "one_hop", "relevant"], default="direct",
                         help="The subgraph retrieval method to load. ")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size to calculate embeddings. ")
 
