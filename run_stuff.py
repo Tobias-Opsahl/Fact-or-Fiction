@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import transformers
 from datasets import get_dataloader, get_graph_dataloader
+from evaluate import evaluate_on_test_set
 from glocal_settings import SMALL, SMALL_SIZE
 from models import QAGNN, get_bert_model
 from train import run_epoch_qa_gnn, run_epoch_simple, train
@@ -26,10 +27,12 @@ def get_args():
     parser.add_argument("--bert_dropout", type=float, default=0, help="Dropout rate for bert classification layer. ")
     parser.add_argument("--gnn_dropout", type=float, default=0.3, help="Dropout rate for GNN layers. ")
     parser.add_argument("--classifier_dropout", type=float, default=0.3, help="Dropout rate for QA-GNN classifier. ")
+    parser.add_argument("--lm_layer_dropout", type=float, default=0.3, help="Dropout for the optional lm layer. ")
     parser.add_argument("--n_gnn_layers", type=int, default=2, help="Number of GNN layers in QA-GNN. ")
     parser.add_argument("--gnn_batch_norm", action="store_true", help="Use Batch Norm between GNN layers. ")
     parser.add_argument("--gnn_hidden_dim", type=int, default=256, help="Size if hidden dimension in GNN layers. ")
     parser.add_argument("--gnn_out_features", type=int, default=256, help="Size of GNNs last layers output. ")
+    parser.add_argument("--lm_layer_features", type=int, default=0, help="Size of optional LM layer. ")
     parser.add_argument("--vectorized", action="store_true", help="Vectorize GNN processing. ")
 
     help = "The type of subgraph to load. `none`: no subgraphs. `direct`: Only directly connected subgraphs. "
@@ -62,13 +65,16 @@ if __name__ == "__main__":
         if args.qa_gnn:
             raise ValueError("Argument `subgraph_type` can not be `none` when using qa-gnn. ")
         args.subgraph_type = None
+    if args.lm_layer_features == 0:
+        args.lm_layer_features = None
 
     if args.qa_gnn:
         model = QAGNN(
             args.model_name, n_gnn_layers=args.n_gnn_layers, gnn_hidden_dim=args.gnn_hidden_dim,
-            gnn_out_features=args.gnn_out_features, gnn_batch_norm=args.gnn_batch_norm,
-            freeze_base_model=args.freeze_base_model, freeze_up_to_pooler=args.freeze_up_to_pooler,
-            gnn_dropout=args.gnn_dropout, classifier_dropout=args.classifier_dropout, vectorized=True)
+            gnn_out_features=args.gnn_out_features, lm_layer_features=args.lm_layer_features,
+            gnn_batch_norm=args.gnn_batch_norm, freeze_base_model=args.freeze_base_model,
+            freeze_up_to_pooler=args.freeze_up_to_pooler, gnn_dropout=args.gnn_dropout,
+            classifier_dropout=args.classifier_dropout, lm_layer_dropout=args.lm_layer_dropout, vectorized=True)
         if args.online_embeddings:
             embedding_model = model.bert
         else:
@@ -81,15 +87,15 @@ if __name__ == "__main__":
             batch_size=args.batch_size, mix_graphs=args.mix_graphs)
         test_loader = get_graph_dataloader(
             "test", subgraph_type=args.subgraph_type, online_embeddings=args.online_embeddings, model=embedding_model,
-            batch_size=args.batch_size, mix_graphs=args.mix_graphs, shuffle=False, drop_last=False)
+            batch_size=args.batch_size // 4, mix_graphs=args.mix_graphs, shuffle=False, drop_last=False)
     else:
         train_loader = get_dataloader(
             "train", args.subgraph_type, subgraph_to_use=args.subgraph_to_use, batch_size=args.batch_size)
         val_loader = get_dataloader(
             "val", args.subgraph_type, subgraph_to_use=args.subgraph_to_use, batch_size=args.batch_size)
         test_loader = get_dataloader(
-            "test", args.subgraph_type, subgraph_to_use=args.subgraph_to_use, batch_size=args.batch_size, shuffle=False,
-            drop_last=False)
+            "test", args.subgraph_type, subgraph_to_use=args.subgraph_to_use, batch_size=args.batch_size // 4,
+            shuffle=False, drop_last=False)
         model = get_bert_model(
             args.model_name, include_classifier=True, num_labels=2, freeze_base_model=args.freeze_base_model,
             freeze_up_to_pooler=args.freeze_up_to_pooler, dropout_rate=args.bert_dropout)
@@ -107,17 +113,13 @@ if __name__ == "__main__":
     logger.info(f"Loading best model state dict from epoch {history['best_epoch']}...")
     model.load_state_dict(models_dict["best_model_state_dict"])
     logger.info("Done loading state dict. ")
-    with torch.no_grad():
-        if args.qa_gnn:
-            test_loss, test_correct = run_epoch_qa_gnn(
-                train=False, dataloader=test_loader, optimizer=optimizer,
-                model=model, criterion=criterion, device=device)
-        else:
-            test_loss, test_correct, = run_epoch_simple(
-                train=False, dataloader=test_loader, optimizer=optimizer, model=model, device=device)
-        test_accuracy = test_correct / len(test_loader.dataset)
-        average_test_loss = test_loss / len(test_loader.dataset)
+    test_results = evaluate_on_test_set(
+        args.qa_gnn, model=model, test_loader=test_loader, criterion=criterion, device=device)
+    test_accuracy = test_results["total_test_accuracy"]
+    average_test_loss = test_results["average_test_loss"]
     history["test_accuracy"] = test_accuracy
+    history["test_results"] = test_results
     dataset_size = "full" if not SMALL else SMALL_SIZE
     save_history(args.model_name, history, dataset_size=dataset_size)
     logger.info(f"Model \"{args.model_name}\": Test accuracy: {test_accuracy * 100:.4f}%, {average_test_loss=:.4f}. ")
+    logger.info(f"{test_results=}")
