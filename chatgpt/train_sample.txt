@@ -1,0 +1,47 @@
+**Task:**
+
+You are tasked with determining the truth value (True or False) of 20 claims. Each claim is based on information that should be verifiable from Wikipedia through the DBpedia knowledge graph. The claims will be provided in text format, with one claim per row.
+
+Instructions:
+
+- You will receive 20 numbered claims.
+- Do not use code analysis or internet search for this task.
+- Your answers should be as accurate as possible based on your knowledge base.
+- Provide your answers in a format that is easy to copy, preferably using Python list syntax.
+- Answer `True` only for claims that are actually true and `False` for all other claims.
+- Include your reasoning for each answer to explain why it is `True` or `False`.
+
+Output Format:
+
+- Provide the answers as a Python list.
+- Each list item should be a tuple containing the question number, the answer (True or False), and a brief explanation.
+
+Example:
+
+```
+[
+    (0, False, "China is a country, not a company."),
+    (1, True, "The 11th Mississippi Infantry Monument is not in Barbour County, West Virginia, but in Gettysburg, Pennsylvania."),
+    ...
+]
+```
+
+Claims:
+
+
+
+```
+1. The School of Business and Social Sciences at the Aarhus University was opened in 1928.
+2. I understand that the AMC Matador was assembled in Louis Greenwald, is available in a 1974 model, and is a relative means of transportation to the AMC Ambassador.
+3. A scientist, an alumnus of Severn School, was born April 27, 1937 and died December 9, 1991.
+4. (66391) 1999 KW4 has a rotation period of 9953.28 and an apoapsis of 162164091.8388 km.
+5. The Atatürk Monument is located in Izmir, Turkey, where the capital is Ankara.
+6. Yes, Eamonn Butler's alma mater is the University of Texas System!
+7. What is the name of Dick Danello's religion?
+8. I have heard 300 North LaSalle was completed in 2009.
+9. When was Dianne Feinstein a senator of California?
+10. The band Clinton Gregory created the album an album in the rock style.
+
+```
+
+Please begin your analysis below:

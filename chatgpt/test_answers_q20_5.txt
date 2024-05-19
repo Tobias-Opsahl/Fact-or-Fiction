@@ -1,0 +1,22 @@
+[
+    (1, False, "Ed Eng is not a known leader of Uruguay. As of the last update, the president of Uruguay was Luis Lacalle Pou."),
+    (2, False, "Juan Afara is not the leader of Floodwood, Minnesota; he is a Paraguayan politician. Floodwood is a small city in Minnesota, USA, not associated with Agustin Barboza."),
+    (3, False, "Branko Crvenkovski was indeed a prime minister of North Macedonia, serving at different times."),
+    (4, False, "103 Colmore Row in Birmingham was not designed by John Madin. It was designed by the architectural firm Doone Silver Kerr."),
+    (5, True, "Alan B. Miller Hall in Williamsburg, Virginia was indeed designed by the architect Robert A.M. Stern."),
+    (6, False, "Sergey Alexandrovich Volkov is a Russian cosmonaut, not an astronaut on Apollo 8, which was an American mission."),
+    (7, False, "This claim seems to be a question rather than a statement that can be verified as true or false."),
+    (8, True, "Rostock and MTU Friedrichshafen are indeed locations relevant to shipbuilding and engine manufacturing respectively."),
+    (9, False, "Georgetown Steam Plant was not designed by Alfred Giles; it was designed by Frank Gilbreth."),
+    (10, False, "The Monarchy of Belgium is located in Brussels, Belgium, not in a building designed by Robert A.M. Stern in Virginia."),
+    (11, False, "Amdavad ni Gufa is located in Ahmedabad, India, a country which did not have Eleazar ben Simon as a leader."),
+    (12, True, "The 11th Mississippi Infantry Monument is indeed located in Adams County, Pennsylvania, which is part of the United States."),
+    (13, False, "Uttar Pradesh is a state in India, not part of Chuxiong City which is located in China."),
+    (14, True, "Bakewell pudding can indeed be served both warm (freshly baked) or cold."),
+    (15, False, "AZAL Arena is not located in Windsor, Massachusetts; it is located in Baku, Azerbaijan."),
+    (16, False, "This claim is vague without specifying which chancellor is referred to; thus, it cannot be verified without additional information."),
+    (17, True, "Agustin Barboza, a Paraguayan musician, did indeed die in Asunción, Paraguay."),
+    (18, True, "Alfredo Zitarrosa was known for his performances in the musical genre called Milonga."),
+    (19, False, "Alfredo Zitarrosa did die in Uruguay, but Tabaré Vázquez was not the leader at the time of his death in 1989. Moreover, Tabaré Vázquez was the President of Uruguay at different periods, but not continuously."),
+    (20, False, "Teresa Maria Manetti did not have biological children; she was a nun and founded the Carmelite Sisters of St. Teresa.")
+]

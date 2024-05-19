@@ -1,0 +1,68 @@
+**Task:**
+
+Determine the truth value (True or False) of 20 claims based on information verifiable from Wikipedia, as represented in the DBpedia knowledge graph. Provide your answers without using real-time internet searches or code analysis, relying solely on your pre-trained knowledge.
+
+**Instructions:**
+
+- You will evaluate 20 claims, presented one per line.
+- Base your answers solely on your knowledge as of your last training cut-off.
+- Provide answers in Python list syntax for easy copying.
+- Respond with `True` for verifiable claims, and `False` otherwise.
+- Include a brief explanation for each answer, explaining your reasoning based on your pre-training.
+
+**Output Format:**
+
+- Format your responses as a list in Python. Each entry should be a tuple, formatted as (claim number, answer, explanation).
+
+
+**Example Claims:**
+
+```
+1. The Atatürk Monument is located in Izmir, Turkey, where the capital is Ankara.
+2. Yes, Eamonn Butler's alma mater is the University of Texas System!
+3. I have heard 300 North LaSalle was completed in 2009.
+4. The band Clinton Gregory created the album an album in the rock style.
+...
+```
+
+**Example output:**
+
+```
+[
+    (1, True, "The Atatürk Monument is indeed located in Izmir, and the capital of Turkey is Ankara."),
+    (2, False, "Eamonn Butler did not attend the University of Texas System; he is a British author and economist whose educational background does not include this institution."),
+    (3, True, "300 North LaSalle in Chicago was indeed completed in 2009."),
+    (4, False, "Clinton Gregory is primarily known as a country music artist, not rock."),
+    ...
+]
+```
+
+**Here are the actual claims you should answer:**
+
+
+
+```
+1. Yep, and the leader of Uruguay is Ed Eng!
+2. Juan Afara is the leader of Floodwood, Minnesota, the birth place of Agustin Barboza, who died in Borgo Val di Taro, Parma, Italy.
+3. Yep, and Branko Crvenkovski was not a prime minister.
+4. 103 Colmore Row is in Birmingham. It was designed by John Madin.
+5. In Virginia, Alan B. Miller Hall was designed by Robert A. M. Stern.
+6. Sergey Alexandrovich Volkov was on the crew of Apollo 8!
+7. When did Stuart Parker (footballer) play for Bury F.C.?
+8. The ship was built in Rostock and is powered by MTU Friedrichshafen made engines that were made in Friedrichshafen.
+9. Georgetown Steam Plant was designed by architect Alfred Giles, who was born in England.
+10. The Monarchy of Belgium currently occupies a building located in Virginia by Robert A.M. Stern.
+11. Amdavad ni Gufa is located in a country, the country which has Eleazar ben Simon as one of its leaders.
+12. The 11th Mississippi Infantry Monument is located in Adams County, Pennsylvania which is in United States.
+13. I believe Uttar Pradesh is part of Chuxiong City.
+14. Bakewell pudding can be served warm (freshly baked) or cold.
+15. AZAL Arena is the ground of AZAL PFK located in Windsor, Massachusetts.
+16. A chancellor was born in Imst in Austria and died in Widcombe, Somerset, England.
+17. Paraguay born Agustin Barboza died in Asunción, part of Gran Asunción.
+18. The musical genre of Alfredo Zitarrosa is actually called Milonga.
+19. Alfredo Zitarrosa died in Uruguay where the leader is Tabaré Vázquez.
+20. I believe Teresa Maria Manetti had a child.
+
+```
+
+Please begin your analysis below:

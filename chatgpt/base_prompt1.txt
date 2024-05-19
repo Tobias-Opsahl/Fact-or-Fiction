@@ -1,0 +1,41 @@
+**Task:**
+
+You are tasked with determining the truth value (True or False) of 20 claims. Each claim is based on information that should be verifiable from Wikipedia through the DBpedia knowledge graph. The claims will be provided in text format, with one claim per row.
+
+Instructions:
+
+- You will receive 20 numbered claims.
+- Do not use code analysis or internet search for this task.
+- Your answers should be as accurate as possible based on your knowledge base.
+- Provide your answers in a format that is easy to copy, preferably using Python list syntax.
+- Answer `True` only for claims that are actually true and `False` for all other claims.
+- Include your reasoning for each answer to explain why it is `True` or `False`.
+
+Output Format:
+
+- Provide the answers as a Python list.
+- Each list item should be a tuple containing the question number, the answer (True or False), and a brief explanation.
+
+Example Claims:
+
+```
+1. The Atatürk Monument is located in Izmir, Turkey, where the capital is Ankara.
+2. Yes, Eamonn Butler's alma mater is the University of Texas System!
+3. I have heard 300 North LaSalle was completed in 2009.
+4. The band Clinton Gregory created the album an album in the rock style.
+...
+```
+
+Example output:
+```
+[
+    (1, True, "The Atatürk Monument is indeed located in Izmir, and the capital of Turkey is Ankara."),
+    (2, False, "Eamonn Butler did not attend the University of Texas System; he is a British author and economist whose educational background does not include this institution."),
+    (3, True, "300 North LaSalle in Chicago was indeed completed in 2009."),
+    (4, False, "Clinton Gregory is primarily known as a country music artist, not rock."),
+    ...
+]
+```
+
+Here are the actual claims you should answer:
+

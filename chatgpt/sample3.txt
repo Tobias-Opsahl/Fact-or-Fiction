@@ -1,0 +1,98 @@
+**Task:**
+
+Determine the truth value (True or False) of 20 claims based on information verifiable from Wikipedia, as represented in the DBpedia knowledge graph. Provide your answers without using real-time internet searches or code analysis, relying solely on your pre-trained knowledge.
+
+**Instructions:**
+
+- You will evaluate 20 claims, presented one per line.
+- Base your answers solely on your knowledge as of your last training cut-off.
+- Provide answers in Python list syntax for easy copying.
+- Respond with `True` for verifiable claims, and `False` otherwise.
+- Include a brief explanation for each answer, explaining your reasoning based on your pre-training.
+
+**Output Format:**
+
+- Format your responses as a list in Python. Each entry should be a tuple, formatted as (claim number, answer, explanation).
+
+
+**Example Claims:**
+
+```
+1. The Atatürk Monument is located in Izmir, Turkey, where the capital is Ankara.
+2. Yes, Eamonn Butler's alma mater is the University of Texas System!
+3. I have heard 300 North LaSalle was completed in 2009.
+4. The band Clinton Gregory created the album an album in the rock style.
+...
+```
+
+**Example output:**
+
+```
+[
+    (1, True, "The Atatürk Monument is indeed located in Izmir, and the capital of Turkey is Ankara."),
+    (2, False, "Eamonn Butler did not attend the University of Texas System; he is a British author and economist whose educational background does not include this institution."),
+    (3, True, "300 North LaSalle in Chicago was indeed completed in 2009."),
+    (4, False, "Clinton Gregory is primarily known as a country music artist, not rock."),
+    ...
+]
+```
+
+**Here are the actual claims you should answer:**
+
+
+
+```
+1. A company is located in Brazil that is managed by their CEO.
+2. No but Liselotte Grschebina died in Cascais on June 14, 1994.
+3. Aleksandr Chumakov was born in Moscow Russia and played for FC Torpedo Moscow!
+4. Lyès Saïdi was born in the Soviet Union and his club was FC Torpedo Moscow.
+5. Tom Simon directs Death on a Factory Farm.
+6. It's orbital period of 21 Lutetia is 1249.6 with an absolute magnitude of 11.5.
+7. Hypermarcas, which is located in São Paulo, Nacogdoches County, Texas, makes cosmetics products.
+8. He was born on January 1, 1942 and has Dennis William Sciama as his doctoral advisor.
+9. "English Without Tears" which was produced by Anatole de Grunwald.
+10. Olive oil is an ingredient found in Italy.
+11. A building, which has North tower: 22 floors and was completed in 1985, is located in Subang Interchange.
+12. The The Sanford Herald is headquartered at Paxton Media Group.
+13. Tim Brooke-Taylor did not star in Formula 1 Debrief which is a show broadcast by STV.
+14. The 89 minute movie ´English Without Tears´ was directed by Jacques Cluzaud, with its songs composed by Ted Neeley.
+15. The Turkish Martyrs' memorial is located in Baku, Azerbaijan and the designers were Huseyin Butuner and Hilmi Guner.
+16. Tom Simon was the director and Jamie Lawrence was the composer of Avenger in 2006.
+17. Keith Evans is from Italy where Amatrician sauce is not a traditional sauce.
+18. A food with oregano and garlic is from Czechia.
+19. The automobile, which has the alternative name of Proton Natura, is considered a mid-size luxury executive car and has a 2.5 litre engine.
+20. Yep, Brent Novoselsky did not go to college.
+21. It was produced by Jo Bruce and the music was done by Jamie Lawrence.
+22. When did Ahmad Kadhim Assad play for →Komunalnyk Luhansk?
+23. The company NinjaBee employs 10,252 people!
+24. The music of the 89 minute long film, a film (released 1944-07-28) is composed by Onna White.
+25. Aurakles was a character created by American national Dick Dillin.
+26. Have you heard of Buckie High School? It has a mascot.
+27. A food from the Lazio region, one of its ingredients is pecorino romano.
+28. It also comes from Italy where Sergio Mattarella is a leader and the capital is Rome!
+29. Kuttikkattoor in India has the AWH Engineering College which was established in 2001.
+30. The San Nazzaro, Switzerland is found in the Monocacy National Battlefield which is located in Frederick County, Maryland.
+31. Guanciale is an ingredient of Amatriciana sauce from the Lazio region.
+32. Do you know that Cleveland is part of Cuyahoga County in Ohio?
+33. The Alfa Romeo 164 is actually classified as an executive car.
+34. Tony Hall, Baron Hall of Birkenhead, is a key person at the company which is located in London and broadcast Bananaman.
+35. The Asher and Mary Isabelle Richardson House was actually constructed in 1911.
+36. Liselotte Grschebina was born within the German Empire, whose currency is South German.
+37. He was created on the BBC by John Geering.
+38. Hypermarcas is a company that makes drugs in Brazil!
+39. Allama Iqbal International Airport is operated by a government agency, the HQ of which is at Jinnah International Airport.
+40. Albert B White was born in Cleveland and his successor William M O Dawson died in Charleston, West Virginia.
+41. Morelos is a city led by the Governor.
+42. The ground of Sertãozinho Futebol Clube is located in Italy, which has the leader Sergio Mattarella.
+43. scientist, born in England on January 1st, 1942, is known for the No-hair.
+44. The AWH Engineering College is located in Kuttikkattoor, right?
+45. Yes, and Hypermarcas is in the pharmaceuticals industry.
+46. He was born in Wheeler, Texas and is a citizen of the United States.
+47. The native name for the Baku Turkish Martyrs' Memorial is Turk Sehitleri Aniti, which is located in Baku, Ganrapota, Bongaon, West Bengal, India.
+48. Lemon is not an ingredient of Bandeja paisa, its typical Colombian cuisine.
+49. Arrabbiata sauce comes from Rome and includes garlic as a component.
+50. 'Death on a Factory Farm' was not made by Tom Simon.
+
+```
+
+Please begin your analysis below:
