@@ -8,7 +8,7 @@ from evaluate import evaluate_on_test_set
 from glocal_settings import SMALL, SMALL_SIZE
 from models import QAGNN, get_bert_model
 from train import run_epoch_qa_gnn, run_epoch_simple, train
-from utils import get_logger, save_history, seed_everything, set_global_log_level
+from utils import get_logger, save_history, seed_everything, set_global_log_level, load_state_dict
 
 logger = get_logger(__name__)
 
@@ -33,6 +33,8 @@ def get_args():
     parser.add_argument("--gnn_hidden_dim", type=int, default=256, help="Size if hidden dimension in GNN layers. ")
     parser.add_argument("--gnn_out_features", type=int, default=256, help="Size of GNNs last layers output. ")
     parser.add_argument("--lm_layer_features", type=int, default=0, help="Size of optional LM layer. ")
+    parser.add_argument("--evaluate_only", action="store_true", help="Do not train, only evaluate. ")
+    parser.add_argument("--state_dict_path", type=str, default="", help="Path to state-dict, if `--evaluate-only`. ")
     parser.add_argument("--vectorized", action="store_true", help="Vectorize GNN processing. ")
 
     help = "The type of subgraph to load. `none`: no subgraphs. `direct`: Only directly connected subgraphs. "
@@ -61,6 +63,8 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+    if args.evaluate_only and args.state_dict_path == "":
+        raise ValueError("Argument --state_dict_path must be provided when `--evaluate_only`. ")
     if args.subgraph_type.lower() == "none":
         if args.qa_gnn:
             raise ValueError("Argument `subgraph_type` can not be `none` when using qa-gnn. ")
@@ -100,26 +104,33 @@ if __name__ == "__main__":
             args.model_name, include_classifier=True, num_labels=2, freeze_base_model=args.freeze_base_model,
             freeze_up_to_pooler=args.freeze_up_to_pooler, dropout_rate=args.bert_dropout)
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
-    lr_scheduler = transformers.get_linear_schedule_with_warmup(
-        optimizer, num_warmup_steps=50, num_training_steps=len(train_loader) * args.n_epochs
-    )
     criterion = nn.BCEWithLogitsLoss()
+    if not args.evaluate_only:
+        optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
+        lr_scheduler = transformers.get_linear_schedule_with_warmup(
+            optimizer, num_warmup_steps=50, num_training_steps=len(train_loader) * args.n_epochs
+        )
 
-    history, models_dict = train(
-        model=model, criterion=criterion, optimizer=optimizer, qa_gnn=args.qa_gnn, train_loader=train_loader,
-        val_loader=val_loader, n_epochs=args.n_epochs, scheduler=lr_scheduler)
+        history, models_dict = train(
+            model=model, criterion=criterion, optimizer=optimizer, qa_gnn=args.qa_gnn, train_loader=train_loader,
+            val_loader=val_loader, n_epochs=args.n_epochs, scheduler=lr_scheduler)
 
-    logger.info(f"Loading best model state dict from epoch {history['best_epoch']}...")
-    model.load_state_dict(models_dict["best_model_state_dict"])
-    logger.info("Done loading state dict. ")
+        logger.info(f"Loading best model state dict from epoch {history['best_epoch']}...")
+        model.load_state_dict(models_dict["best_model_state_dict"])
+        logger.info("Done loading state dict. ")
+    else:
+        logger.info(f"Loading best model state dict from path {args.state_dict_path}...")
+        model.load_state_dict(load_state_dict(args.state_dict_path, device))
+        logger.info("Done loading state dict. ")
+        history = {}
     test_results = evaluate_on_test_set(
         args.qa_gnn, model=model, test_loader=test_loader, criterion=criterion, device=device)
     test_accuracy = test_results["total_test_accuracy"]
     average_test_loss = test_results["average_test_loss"]
     history["test_accuracy"] = test_accuracy
     history["test_results"] = test_results
-    dataset_size = "full" if not SMALL else SMALL_SIZE
-    save_history(args.model_name, history, dataset_size=dataset_size)
+    if not args.evaluate_only:
+        dataset_size = "full" if not SMALL else SMALL_SIZE
+        save_history(args.model_name, history, dataset_size=dataset_size)
     logger.info(f"Model \"{args.model_name}\": Test accuracy: {test_accuracy * 100:.4f}%, {average_test_loss=:.4f}. ")
     logger.info(f"{test_results=}")
