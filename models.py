@@ -3,14 +3,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.functional import cosine_similarity
 from torch_geometric.nn import GATConv, global_mean_pool
-from transformers import AutoModelForSequenceClassification, BertModel
+from transformers import AutoModelForSequenceClassification, AutoModel
 from utils import get_logger
 
 logger = get_logger(__name__)
 
 
 def get_bert_model(model_name="bert", include_classifier=True, num_labels=2, freeze_base_model=False,
-                   freeze_up_to_pooler=True, dropout_rate=0):
+                   freeze_up_to_pooler=True, dropout_rate=0, use_roberta=False):
     """
     Load a pretrained BERT model with desired configurations.
 
@@ -22,6 +22,7 @@ def get_bert_model(model_name="bert", include_classifier=True, num_labels=2, fre
         freeze_up_to_pooler (bool, optional): Will freeze all layers until the last layer in BERT, the pooler,
             with approximately 500k parameters. Defaults to True.
         dropout_rate (int, optional): Dropout rate for the classification layer. Defaults to 0.
+        use_roberta (bool): If `True`, will use RoBERTa instead of BERT.
 
     Returns:
         transformer model: The loaded model.
@@ -29,13 +30,18 @@ def get_bert_model(model_name="bert", include_classifier=True, num_labels=2, fre
     if freeze_base_model and freeze_up_to_pooler:
         logger.warn("Both `freeze_base_model` and `freeze_up_to_pooler` is True. Freezing base model.")
 
+    if use_roberta:
+        model_name = "roberta-base"
+    else:
+        model_name = "bert-base-uncased"
+
     if include_classifier:
         model = AutoModelForSequenceClassification.from_pretrained(
-            "bert-base-uncased", cache_dir="./cache", trust_remote_code=True, num_labels=num_labels,
+            model_name, cache_dir="./cache", trust_remote_code=True, num_labels=num_labels,
             output_hidden_states=True
         )
     else:
-        model = BertModel.from_pretrained("bert-base-uncased")
+        model = AutoModel.from_pretrained(model_name)
 
     model.name = model_name
     if freeze_base_model:
@@ -62,7 +68,7 @@ class QAGNN(nn.Module):
     """
     def __init__(self, model_name, n_gnn_layers=2, gnn_hidden_dim=256, gnn_out_features=256, lm_layer_features=None,
                  gnn_batch_norm=True, freeze_base_model=False, freeze_up_to_pooler=True, gnn_dropout=0.3,
-                 classifier_dropout=0.2, lm_layer_dropout=0.4, vectorized=True):
+                 classifier_dropout=0.2, lm_layer_dropout=0.4, use_roberta=False):
         """
         Args:
             model_name (str): Name of the model, will be saved as a class variable.
@@ -80,6 +86,8 @@ class QAGNN(nn.Module):
             gnn_dropout (float, optional): Dropout rate for the GNN layers. Defaults to 0.3.
             classifier_dropout (float, optional): Dropout rate for the last layer.
             lm_layer_dropout (float, optional): Dropout rate for the optional `lm_layer`.
+            use_roberta (bool): If True, will use RoBERTa for the language model (the one that trains, not the
+                one for the embeddings.)
 
         Raises:
             ValueError: If `n_gnn_layers` is less than 2.
@@ -87,11 +95,10 @@ class QAGNN(nn.Module):
         if n_gnn_layers < 2:
             raise ValueError(f"Argument `n_gnn_layers` must be atleast 2. Was {n_gnn_layers}. ")
         super(QAGNN, self).__init__()
-        self.vectorized = vectorized
 
         self.name = model_name
         self.bert = get_bert_model("bert_" + model_name, include_classifier=False, freeze_base_model=freeze_base_model,
-                                   freeze_up_to_pooler=freeze_up_to_pooler)
+                                   freeze_up_to_pooler=freeze_up_to_pooler, use_roberta=use_roberta)
 
         self.n_gnn_layers = n_gnn_layers
         self.gnn_layers = nn.ModuleList()

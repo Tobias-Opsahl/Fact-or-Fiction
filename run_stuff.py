@@ -21,6 +21,7 @@ def get_args():
     parser.add_argument("--learning_rate", type=float, default=0.00001, help="learning rate")
     parser.add_argument("--n_epochs", type=int, default=5, help="The amount of epochs to train for. ")
     parser.add_argument("--qa_gnn", action="store_true", help="Will use QA-GNN model. If not, will fine tune Bert.")
+    parser.add_argument("--use_roberta", actiona="store_true", help="Use RoBERTa instead of BERT. ")
 
     parser.add_argument("--freeze_base_model", action="store_true", help="Freeze bert base model. ")
     parser.add_argument("--freeze_up_to_pooler", action="store_true", help="Freeze bert up to last pooling layer. ")
@@ -78,7 +79,8 @@ if __name__ == "__main__":
             gnn_out_features=args.gnn_out_features, lm_layer_features=args.lm_layer_features,
             gnn_batch_norm=args.gnn_batch_norm, freeze_base_model=args.freeze_base_model,
             freeze_up_to_pooler=args.freeze_up_to_pooler, gnn_dropout=args.gnn_dropout,
-            classifier_dropout=args.classifier_dropout, lm_layer_dropout=args.lm_layer_dropout, vectorized=True)
+            classifier_dropout=args.classifier_dropout, lm_layer_dropout=args.lm_layer_dropout,
+            use_roberta=args.use_roberta)
         if args.online_embeddings:
             embedding_model = model.bert
         else:
@@ -102,7 +104,7 @@ if __name__ == "__main__":
             shuffle=False, drop_last=False)
         model = get_bert_model(
             args.model_name, include_classifier=True, num_labels=2, freeze_base_model=args.freeze_base_model,
-            freeze_up_to_pooler=args.freeze_up_to_pooler, dropout_rate=args.bert_dropout)
+            freeze_up_to_pooler=args.freeze_up_to_pooler, dropout_rate=args.bert_dropout, use_roberta=args.use_roberta)
 
     criterion = nn.BCEWithLogitsLoss()
     if not args.evaluate_only:
