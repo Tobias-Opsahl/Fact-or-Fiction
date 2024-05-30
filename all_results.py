@@ -31,6 +31,14 @@ results = {
         {"existence": 0.590454195535027, "substitution": 0.906807131280389, "multi hop": 0.7761698022190062,
          "multi claim": 0.8329790464621926, "negation": 0.745814307458143, "single hop": 0.802382319173364,
          "total_test_accuracy": 0.7963720827342108, "average_test_loss": 0.44227799563681547},
+    "baseline_evidence_direct_filled_walkable":  # 14 timer total 10 epochs, best 6. epoch.
+        {'existence': 0.9730561970746728, 'substitution': 0.9340896812533765, 'multi hop': 0.8031837916063675,
+         'multi claim': 0.9750986941998178, 'negation': 0.9254185692541856, 'single hop': 0.9740241102181401,
+         'total_test_accuracy': 0.934852339342993, 'average_test_loss': 0.20509631786457694},
+    "baseline_evidence_relevant_walkable":
+        {'existence': 0.8937644341801386, 'substitution': 0.9397622906537006, 'multi hop': 0.773757838880849,
+         'multi claim': 0.9638627391436381, 'negation': 0.9003044140030442, 'single hop': 0.953788748564868,
+         'total_test_accuracy': 0.9125096781329499, 'average_test_loss': 0.2517292980203215},
     "baseline_factkg_no_evidence":
         {"single hop": 0.6964, "multi claim": 0.6331, "existence": 0.6184, "multi hop": 0.7006,
          "negation": 0.6362, "total_test_accuracy": 0.6520},
@@ -57,6 +65,8 @@ model_name_to_table_mapping = {
     "baseline_no_evidence": "BERT (no subgraphs)",
     "baseline_evidence_relevant": "BERT (contextual)",
     "baseline_evidence_direct": "BERT (direct)",
-    "baseline_factkg_no_evidence": "FactKG Benchmark line (no subgraphs)",
+    "baseline_evidence_direct_filled_walkable": "BERT (one-hop)",
+    "baseline_evidence_relevant_walkable": "BERT (contextual one-hop)",
+    "baseline_factkg_no_evidence": "FactKG Benchmark (no subgraphs)",
     "baseline_factkg_evidence": "FactKG Benchmark (subgraphs)"
 }
