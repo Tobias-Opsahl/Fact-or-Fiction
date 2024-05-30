@@ -14,13 +14,14 @@ from utils import get_logger, seed_everything, set_global_log_level
 logger = get_logger(__name__)
 
 
-def get_df(data_split, full=True):
+def get_df(data_split, full=True, small=None):
     """
     Read and returns a dataframe of the dataset.
 
     Args:
         data_split (str): Which datasplit to load, in `train`, `val` or `test`
         full (bool, optional): Wether to use the full dataset or the simple one. Defaults to True.
+        small (bool): Pass to override `SMALL`.
 
     Raises:
         ValueError: If `data_split` is an unsuported string.
@@ -32,13 +33,16 @@ def get_df(data_split, full=True):
     if data_split not in choices:
         raise ValueError(f"Argument `data_split` must be in {choices}. Was {data_split}. ")
 
+    if small is None:
+        small = SMALL
+
     if full:
         intermediary_path = FULL_FOLDER
     else:
         intermediary_path = SIMPLE_FOLDER
     path = Path(DATA_PATH) / intermediary_path / DATA_SPLIT_FILENAMES[data_split]
     df = pd.read_csv(path)
-    if SMALL:
+    if small:
         df = df[:SMALL_SIZE]
     return df
 

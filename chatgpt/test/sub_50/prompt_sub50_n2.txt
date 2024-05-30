@@ -1,0 +1,99 @@
+**Task:**
+
+Determine the truth value (True or False) of the following claims based on information verifiable from Wikipedia, as represented in the DBpedia knowledge graph. Provide your answers without using real-time internet searches or code analysis, relying solely on your pre-trained knowledge.
+
+**Instructions:**
+
+- You will evaluate the following claims, presented one per line.
+- Base your answers solely on your knowledge as of your last training cut-off.
+- Provide answers in Python list syntax for easy copying.
+- Respond with `True` for verifiable claims or claims that are very likely to be true, and `False` otherwise.
+- Include a brief explanation for each answer, explaining your reasoning based on your pre-training.
+- If the claim is vague or lacks specific information, please make an educated guess on whether it is likely to be True or False.
+
+**Output Format:**
+
+- Format your responses as a list in Python. Each entry should be a tuple, formatted as (claim number, answer, explanation).
+
+
+**Example Claims:**
+
+```
+1. The Atatürk Monument is located in Izmir, Turkey, where the capital is Ankara.
+2. Yes, Eamonn Butler's alma mater is the University of Texas System!
+3. I have heard 300 North LaSalle was completed in 2009.
+4. The band Clinton Gregory created the album an album in the rock style.
+...
+```
+
+**Example output:**
+
+```
+[
+    (1, True, "The Atatürk Monument is indeed located in Izmir, and the capital of Turkey is Ankara."),
+    (2, False, "Eamonn Butler did not attend the University of Texas System; he is a British author and economist whose educational background does not include this institution."),
+    (3, True, "300 North LaSalle in Chicago was indeed completed in 2009."),
+    (4, False, "Clinton Gregory is primarily known as a country music artist, not rock."),
+    ...
+]
+```
+
+**Here are the actual claims you should answer:**
+
+
+
+```
+1. The AZAL Arena is actually in Shuvalan.
+2. Irish English is the official language of Ireland, which is led by Carlos Fernando Simas Monteiro and home to Adare Manor.
+3. It's called A Fortress of Grey Ice and it is a hardcover.
+4. William Anders, born in Kanke, Nigeria on the 17th of October 1933, retired on the 1st of September 1969.
+5. The distributor of Big Hero 6 is named EuropaCorp Distributions.
+6. Alfons Gorbach was actually born in the state of Tyrol in Austria!
+7. What is the name of Tom Neilson's child?
+8. A city, :22px Austrian Netherlands is the birthplace of Alfredo Zitarrosa.
+9. The currency used in the Republic of Ireland is the Euro.
+10. William Harris Lloyd Roberts was born in Georgia Vermont and became a member of the Whig Party of the United States which is led by Baba Bet Parhad.
+11. The song Mermaid by Train a reggae genre, was followed by the release of Imagine by John Lennon performed by Train.
+12. The leader is Narendra Modi and Agra airport is located in that country.
+13. Agustin Barboza was from Bubikon and died in Asuncion, Miskolc.
+14. La Toba is part of Uttar Pradesh which is where Agra Airport is and where Robert Byrne is the leader.
+15. Phan Văn Khải was born in Imst, in Austria.
+16. I read that the leader of Birmingham is not a Liberal Democrat.
+17. If only Anandiben Patel was not the leader of Gujarat, where the Amdavad ni Gufa is not located.
+18. I have heard that Big Hero 6 stars Marrie Lee.
+19. The Indian Air Force in India, operates Agra Airport which uses VIAG as its ICAO location identifier.
+20. Yes, The Train song Mermaid is followed by the John Lennon song Imagine!
+21. Jan Duursema and Paul Kupperberg created the comic book character of Arion who is also known as Ahri'ahn.
+22. Max Campbell, who was born in Sarawak, is a member of Barisan Ra'ayat Jati Sarawak Party.
+23. A politician, who resides in Kuching and was born in Miri, Malaysia, is a member the Hartlepool First party.
+24. Frangipane is also an ingredient of Bakewell tarts!
+25. Agra Airport is located in a country, where the leader is TS Thakur!
+26. Yes, Richard Gosling was a Vice president.
+27. The Acura TLX is manufactured by Honda, has a Mercury Cougar  Seventh generation  1  3, and is related to the Dodge EV.
+28. Yeah! Darin King is a leader in the Derbyshire Dales.
+29. What is the name of Flournoy Miller's spouse?
+30. Uruguay's leader is now Tabare Vazquez because Alfredo Zitarrosa died in the city of Uruguay.
+31. And the distributing label of Polydor Records is Universal Music Group!
+32. Bhajji originates from a country where Franciszek Fejdych and John Holdich (OBE) are leaders.
+33. When was Lyuben Berov prime minister?
+34. Baymax first appeared in a film called Big Hero 6.
+35. Bakewell Tart is actually a dish that comes from the Derbyshire Dales region.
+36. I remember Strong High School had a mascot.
+37. Syed A. B. Mahmud Hossain was the Secretary of the State of Vermont he was succeeded by Homer Elihu Royce.
+38. Alfredo Zitarrosa also died in Montevideo, Uruguay.
+39. When did Stuart Parker (footballer) play for Runcorn F.C. Halton?
+40. At a mass of 5.7 kgs, 1101 Clematis, has an apoapsis of 520906000.0 kilometres.
+41. AFC Blackpool has the full name "Achille Njanke". They have 1500 members and their grounds are Jepson Way.
+42. Yeah, Jing Haipeng was the commander on Apollo 8.
+43. he was born in Austria-Hungary and was President when Alfons Gorbach was in office.
+44. An exponent of Milonga, a musical artist has a background as a solo singer and is part of the record label, Czech Republic.
+45. I'm not sure. Maybe (Horse) did not have an award.
+46. Mermaid, a song written by Espen Lind, was released by the group Train on December 27, 2012, following its recording of the song This’ll Be My Year.
+47. 112798 Kelindsey has an apoapsis of 520906000.0 kilometres and an escape velocity of 0.02 kilometres per second.
+48. Meles Zenawi was not the prime minister though.
+49. Yeah 1097 Vicia has an escape velocity of 0.071 kilometres per second!
+50. A person was born in Georgia, Vermont, worked as the Secretary of State of Vermont and was succeeded by Homer Elihu Royce.
+
+```
+
+Please begin your analysis below:

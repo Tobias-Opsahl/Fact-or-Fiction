@@ -1,0 +1,74 @@
+**Task:**
+
+Determine the truth value (True or False) of the following claims based on information verifiable from Wikipedia, as represented in the DBpedia knowledge graph. Provide your answers without using real-time internet searches or code analysis, relying solely on your pre-trained knowledge.
+
+**Instructions:**
+
+- You will evaluate the following claims, presented one per line.
+- Base your answers solely on your knowledge as of your last training cut-off.
+- Provide answers in Python list syntax for easy copying.
+- Respond with `True` for verifiable claims or claims that are very likely to be true, and `False` otherwise.
+- Include a brief explanation for each answer, explaining your reasoning based on your pre-training.
+- If the claim is vague or lacks specific information, please make an educated guess on whether it is likely to be True or False.
+
+**Output Format:**
+
+- Format your responses as a list in Python. Each entry should be a tuple, formatted as (claim number, answer, explanation).
+
+
+**Example Claims:**
+
+```
+1. The Atatürk Monument is located in Izmir, Turkey, where the capital is Ankara.
+2. Yes, Eamonn Butler's alma mater is the University of Texas System!
+3. I have heard 300 North LaSalle was completed in 2009.
+4. The band Clinton Gregory created the album an album in the rock style.
+...
+```
+
+**Example output:**
+
+```
+[
+    (1, True, "The Atatürk Monument is indeed located in Izmir, and the capital of Turkey is Ankara."),
+    (2, False, "Eamonn Butler did not attend the University of Texas System; he is a British author and economist whose educational background does not include this institution."),
+    (3, True, "300 North LaSalle in Chicago was indeed completed in 2009."),
+    (4, False, "Clinton Gregory is primarily known as a country music artist, not rock."),
+    ...
+]
+```
+
+**Here are the actual claims you should answer:**
+
+
+
+```
+1. Hideaki Miyamoto wrote the music for the film a television show, which has a running time of 83 minutes and was directed by Dayyan Eng.
+2. Liselotte Grschebina was born in Karlsruhe May 2, 1908 and is an Israeli national.
+3. What is the name of 2012 in UFC's predecessor?
+4. Yes, it's a typical Colombian dish.
+5. Yep, Albert B White was born in May 1977.
+6. Well, he was not created by Dick Dillin or Len Wein.
+7. On January 1, 1886, Grigory Neujmin discovered Linus.
+8. The government agency is not located at Jinnah International Airport and is not the operating group of the Allama Iqbal International Airport.
+9. A fictional character, starring Tim Brooke-Taylor, was first broadcast by STV on the 3rd October 1983.
+10. It is a traditional food from the Paisa region in Spain.
+11. The 14th New Jersey Volunteer Infantry Monument is located in the district of the Utica Community Schools which is located Frederick County, Maryland.
+12. Liselotte Grschebina is a city with a total area of 54000.0.
+13. It has 20 floors, and it was designed by Helmut Jahn.
+14. Yeah, the club Aleksandr Chumakov works for is not Phönix Seen.
+15. Ciudad Ayala is part of Morelos and Graco Ramírez is a leader.
+16. Yes, in Mexico the leader title is not the President of the Senate.
+17. Konjac is an element of Bandeja paisa and is part of the Lauraceae family.
+18. Born on the 01-07-1976, Ahmad Kadhim Assad, whose club is Al-Naft, plays for the Syrian club Al Jaish SC.
+19. Ahmad Kadhim Assad has played for both Al-Naft and Esteghlal Ahvaz FC.
+20. 200 Public Square, is located in Cuyahoga County, Ohio.
+21. Arrabbiata sauce is from a country called Pietro Grasso?
+22. William M O Dawson was born in Bloomington, Maryland and succeeded Albert B White.
+23. The Alfa Romeo 164 and the Opel Vectra are related.
+24. Stratos Gabrielidis did not do the editing of "English Without Tears.".
+25. I imagined that Ciudad Ayala is in the country of Zbarazh Raion.
+
+```
+
+Please begin your analysis below:
