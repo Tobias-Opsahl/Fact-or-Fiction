@@ -60,6 +60,8 @@ When a model is trained, it will be automatically saved in `./models/`. A traine
 
 Here are the specific script ran for the models in the paper (which includes the hyperparameters):
 
+BERT (single-step) (best-performing model) `python run_stuff.py baseline_evidence6 --subgraph_type direct_filled --subgraph_to_use walkable --n_epochs 10 --batch_size 4 --learning_rate 0.000005`
+
 QA-GNN (single-step): `CUDA_VISIBLE_DEVICES=2 nohup python run_stuff.py qa_gnn44 --qa_gnn --subgraph_type relevant --n_epochs 30 --batch_size 128 --gnn_batch_norm --classifier_dropout 0.5 --gnn_dropout 0.1 --learning_rate 0.000001 --mix_graphs`
 
 QA-GNN (contextual): `python run_stuff.py qa_gnn33 --qa_gnn --subgraph_type relevant --n_epochs 20 --batch_size 64 --gnn_batch_norm --classifier_dropout 0.5 --gnn_dropout 0.1 --learning_rate 0.000005`
