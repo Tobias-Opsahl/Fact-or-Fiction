@@ -56,19 +56,19 @@ Including the argument ``--qa_gnn`` will train a QAGNN, if not, a BERT is finetu
 
 When a model is trained, it will be automatically saved in `./models/`. A trained model can be evaluated only by passing `--evaluate_only` and `--state_dict_path models/model_name.pth`.
 
-Here are the specific script ran for the models in the paper (which includes the hyperparameters):
+Here are the specific script ran for the models in the paper (which includes the hyperparameters). Note that the first argument is simply the name of the model that will be saved, it can be set to anything.
 
-BERT (single-step) (best-performing model) `python run_stuff.py baseline_evidence6 --subgraph_type direct_filled --subgraph_to_use walkable --n_epochs 10 --batch_size 4 --learning_rate 0.000005`
+BERT (single-step) (best-performing model) `python run_stuff.py bert_single_step --subgraph_type direct_filled --subgraph_to_use walkable --n_epochs 10 --batch_size 4 --learning_rate 0.000005`
 
-QA-GNN (single-step): `CUDA_VISIBLE_DEVICES=2 nohup python run_stuff.py qa_gnn44 --qa_gnn --subgraph_type relevant --n_epochs 30 --batch_size 128 --gnn_batch_norm --classifier_dropout 0.5 --gnn_dropout 0.1 --learning_rate 0.000001 --mix_graphs`
+QA-GNN (single-step): `python run_stuff.py qa_gnn_single_step --qa_gnn --subgraph_type relevant --n_epochs 30 --batch_size 128 --gnn_batch_norm --classifier_dropout 0.5 --gnn_dropout 0.1 --learning_rate 0.000001 --mix_graphs`
 
-QA-GNN (contextual): `python run_stuff.py qa_gnn33 --qa_gnn --subgraph_type relevant --n_epochs 20 --batch_size 64 --gnn_batch_norm --classifier_dropout 0.5 --gnn_dropout 0.1 --learning_rate 0.000005`
+QA-GNN (contextual): `python run_stuff.py qa_gnn_contextual --qa_gnn --subgraph_type relevant --n_epochs 20 --batch_size 64 --gnn_batch_norm --classifier_dropout 0.5 --gnn_dropout 0.1 --learning_rate 0.000005`
 
-QA-GNN (direct): `python run_stuff.py --model_name qa_gnn15 --qa_gnn --subgraph_type direct --n_epochs 8 --batch_size 128 --gnn_batch_norm`.
+QA-GNN (direct): `python run_stuff.py --model_name qa_gnn_direct --qa_gnn --subgraph_type direct --n_epochs 8 --batch_size 128 --gnn_batch_norm`.
 
-BERT (contextual): `python run_stuff.py baseline_evidence3 --subgraph_type relevant --subgraph_to_use connected --n_epochs 10 --batch_size 8 --learning_rate 0.000005`
+BERT (contextual): `python run_stuff.py bert_contextual --subgraph_type relevant --subgraph_to_use connected --n_epochs 10 --batch_size 8 --learning_rate 0.000005`
 
-BERT (direct): `python run_stuff.py baseline_evidence7 --subgraph_type direct --subgraph_to_use connected --n_epochs 10 --batch_size 4 --learning_rate 0.000005`
+BERT (direct): `python run_stuff.py bert_direct --subgraph_type direct --subgraph_to_use connected --n_epochs 10 --batch_size 4 --learning_rate 0.000005`
 
 BERT (no subgraphs): `python run_stuff.py baseline_no_evidence --subgraph_type none --n_epochs 10 --batch_size 32`
 
