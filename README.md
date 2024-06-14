@@ -1,21 +1,19 @@
-# Home exam IN5550
+# Fact or Fiction? Exploring Diverse Approaches to Fact Verification with Language Models
 
 This repo contains the code and documentation to the article *Fact or Fiction? Exploring Diverse Approaches to Fact Verification with
-Language Models*, which was submitted as the home exam to the course IN5550 at the University of Oslo, spring 2024. This was made by Tobias Opsahl (`tobiasop@gmail.com`, `tobiasao@uio.no`).
+Language Models*.
 
-The paper assesses the performance of various language models at the [FactKG](https://arxiv.org/pdf/2104.06378) dataset. It tests a finetuned , trains a [question answer graph neural network (QA-GNN)](https://arxiv.org/pdf/2104.06378) and prompts ChatGPT. The QA-GNN trains efficiently due to frozen node and edge embeddings which can be computed in advance, and only once.
+The paper assesses the performance of various language models at the [FactKG](https://arxiv.org/pdf/2104.06378) dataset. It tests a finetuned BERT, trains a [question answer graph neural network (QA-GNN)](https://arxiv.org/pdf/2104.06378) and prompts ChatGPT. The subgraph retrival method utilises simple logical methods, which are cheap to perform and resulted in improved performance. The QA-GNN trains efficiently due to frozen node and edge embeddings which can be computed in advance, and only once.
 
 ## Requirements
 
 The code requires `pandas`, `pytorch`, `numpy`, `transformers`, in addition to `pytorch_geometric` for QA-GNNs, and `nltk` and `spacy` for the contextulized embeddings. Additionally, one have to run `python -m spacy download en_core_web_sm` to download the embeddings (it does not take long).
 
-If you run on Fox, most of the libraries are found as modules, but `torch_geometric` needs to be installed. This can be done locally in a venv. More information about that below, see `Running on Fox`.
-
 ## Running the code
 
-Before training the models, one needs to run some preprocessing of the datasets. The FactKG datasets were provided as `.csv` files in the folder `/fp/projects01/ec30/factkg/` at Fox. One also needs the `DBpedia` knowledge graph (for preprocessing only, not training), provided at `/fp/projects01/ec30/factkg/dbpedia/dbpedia_2015_undirected_light.pickle` If you wish to run this locally, please save it locally in `./data`. All the paths are saved in `constants.py`, so please make sure that these corresponds to your paths. The parameters `LOCAL` and in `glocal_settings.py` to indicate whether you are using the fox path or not.
+Before training the models, one needs to run some preprocessing of the datasets. The `.csv` file from the FactKG dataset should be downloaded and put in `./data/` (or change the path in `constants.py`). One also needs the `DBpedia` knowledge graph (for preprocessing only, not training). The FactKG dataset provides a light version of DBpedia that is recommened to use. All the paths are saved in `constants.py`, so please make sure that these corresponds to your paths.
 
-Chech the [FactKG paper](https://arxiv.org/pdf/2104.06378) to download the data, if it is not available.
+Chech the [FactKG paper](https://arxiv.org/pdf/2104.06378) to download the data.
 
 Tip: Try setting `SMALL` to `True` in `glocal_settings.py` to test the runs really fast, since this index only a small part of the dataset.
 
@@ -82,7 +80,7 @@ There are code aviable in `make_chatgpt_prompt.py` to create the ChatGPT prompts
 python make_chatgpt_prompt.py --dataset_type val --sample_size 20 --prompt_path base_prompt2.txt --destination_path sample.txt --seed_offset 0
 ```
 
-This will add 20 validation questions to the prompt found in `base_prompt2.txt`, saved in `sample.txt`. It will also save the rest of the dataframe (including the labels) as `sample_df.pkl`. If one wishes to have different samples of the same size, use different numbers of `--seed_offset`. If one wishes to change the prompt, make changes and send the prompt's path as `--prompt_path`.
+This will add 20 validation questions to the prompt found in `base_prompt.txt`, saved in `sample.txt`. It will also save the rest of the dataframe (including the labels) as `sample_df.pkl`. If one wishes to have different samples of the same size, use different numbers of `--seed_offset`. If one wishes to change the prompt, make changes and send the prompt's path as `--prompt_path`.
 
 The prompt (as in `sample.txt`) was manually copy pasted into ChatGPT 4's website. The answers were manually copy pasted into answer text files. To evaluate an answer (after saving the answers), run:
 
@@ -100,46 +98,6 @@ python make_chatgpt_prompt.py --evaluate_tests --n_questions_eval 20
 
 Where 20 can be changed to 50 for the 50 question version.
 
-### Running on Fox
-
-Create a virtual environment, pip install `torch_geometric`, `nltk` and `spacy`, run `python -m spacy download en_core_web_sm`, and include the path to the virtual environment in the `.slurm` file. One also need some stuff so that the code can be ran deterministically if it does. This still gave some problems, so some of the code was ran without `torch.deterministic` (but still with all seeds). Here is an example slurm file:
-
-```slurm
-#!/bin/bash
-#SBATCH --job-name=job_name
-#SBATCH --account=ec30
-#SBATCH --time=3:30:00
-#SBATCH --partition=accel
-#SBATCH --gpus=1
-#SBATCH --nodes=1
-#SBATCH --mem-per-cpu=8G
-#SBATCH --output=job_%j.out
-#SBATCH --error=job_%j.out
-
-# sanity: exit on all errors and disallow unset environment variables
-set -o errexit
-set -o nounset
-
-export CUBLAS_WORKSPACE_CONFIG=:4096:8
-
-# the important bit: unload all current modules (just in case) and load only the necessary ones
-module purge
-module use -a /fp/projects01/ec30/software/easybuild/modules/all/
-module load nlpl-nlptools/01-foss-2022b-Python-3.10.8
-module load nlpl-pytorch/2.1.2-foss-2022b-cuda-12.0.0-Python-3.10.8
-module load nlpl-gensim/4.3.2-foss-2022b-Python-3.10.8
-module load nlpl-transformers/4.35.2-foss-2022b-Python-3.10.8
-module load nlpl-nlptools/01-foss-2022b-Python-3.10.8
-
-source ~/venvs/<venv_name>/bin/activate
-
-python run_stuff.py model_name...
-```
-
-The `export CUBLAS_WORKSPACE_CONFIG=:4096:8` fixes the cuda deterministic stuff, and the virtual environment is here called `<venv_name>`.
-
 ### Thank You
-
-Questions? Please send a mail to `tobiasop@gmail.com` or `tobiasao@uio.no`.
 
 ![no gif :(](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHdlZzhnOXJtaGp1ZG1vOHpudWtkaTExdTM3Ync5OHYxNmw5dGg0diZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/mcsPU3SkKrYDdW3aAU/giphy.gif)

@@ -4,9 +4,8 @@ import pickle
 from pathlib import Path
 
 import torch
-from constants import EMBEDDINGS_FILENAME, SAVE_DATAFOLDER, TEST_FILENAME, TRAIN_FILENAME, VAL_FILENAME
+from constants import EMBEDDINGS_FILENAME, DATA_PATH
 from datasets import get_precomputed_embeddings, get_subgraphs, calculate_embeddings
-from glocal_settings import LOCAL, SMALL, SMALL_SIZE
 from models import get_bert_model
 from transformers import AutoTokenizer
 from utils import get_logger, seed_everything, set_global_log_level
@@ -30,7 +29,7 @@ def get_entity_and_relations_from_walked_graph(graph):
 
 
 def get_all_embeddings(subgraph_df, tokenizer, model, batch_size=32):
-    file_path = Path(SAVE_DATAFOLDER) / EMBEDDINGS_FILENAME
+    file_path = Path(DATA_PATH) / EMBEDDINGS_FILENAME
     if os.path.exists(file_path):
         embedding_dict = get_precomputed_embeddings()
     else:
@@ -89,7 +88,3 @@ if __name__ == "__main__":
         subgraph_df = get_subgraphs(dataset_type, args.subgraph_type)
         model = get_bert_model("bert").to(device)
         embeddings = get_all_embeddings(subgraph_df, tokenizer, model, batch_size=args.batch_size)
-
-    if LOCAL:
-        from IPython import embed
-        embed()

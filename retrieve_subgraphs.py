@@ -8,11 +8,12 @@ from pathlib import Path
 import nltk
 import pandas as pd
 import spacy
-from baseline.kg import KG
-from constants import (DATA_PATH, DBPEDIA_FOLDER, DBPEDIA_LIGHT_FILENAME, FULL_FOLDER, SAVE_DATAFOLDER, SUBGRAPH_FOLDER,
-                       TEST_FILENAME, TRAIN_FILENAME, VAL_FILENAME)
-from glocal_settings import LOCAL, SMALL, SMALL_SIZE
 from nltk.corpus import stopwords
+
+from baseline.kg import KG
+from constants import (DATA_PATH, DBPEDIA_FOLDER, DBPEDIA_LIGHT_FILENAME, SUBGRAPH_FOLDER, TEST_FILENAME,
+                       TRAIN_FILENAME, VAL_FILENAME)
+from glocal_settings import SMALL, SMALL_SIZE
 from utils import get_logger, set_global_log_level
 
 logger = get_logger(__name__)
@@ -228,10 +229,10 @@ if __name__ == "__main__":
     knowledge_graph_instance = KnowledgeGraph(kg)
     kg_instance = KG(kg)
 
-    save_folder = Path(SAVE_DATAFOLDER) / SUBGRAPH_FOLDER
+    save_folder = Path(DATA_PATH) / SUBGRAPH_FOLDER
     os.makedirs(save_folder, exist_ok=True)
     for filename in filenames:
-        df_path = Path(DATA_PATH) / FULL_FOLDER / filename
+        df_path = Path(DATA_PATH) / filename
         df = pd.read_csv(df_path)
         if SMALL:
             df = df[:SMALL_SIZE]
@@ -257,7 +258,3 @@ if __name__ == "__main__":
         subgraph_df["subgraph"] = subgraphs
         subgraph_df["walked"] = walk_graphs(subgraph_df, kg_instance)
         subgraph_df.to_pickle(save_path)
-
-    if LOCAL:
-        from IPython import embed
-        embed()

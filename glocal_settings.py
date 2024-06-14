@@ -1,4 +1,2 @@
-LOCAL = False
 SMALL = False
 SMALL_SIZE = 100
-ML_NODES = False

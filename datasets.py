@@ -3,24 +3,23 @@ from pathlib import Path
 
 import pandas as pd
 import torch
-from constants import (BERT_LAST_LAYER_DIM, DATA_PATH, DATA_SPLIT_FILENAMES, EMBEDDINGS_FILENAME, FULL_FOLDER,
-                       SAVE_DATAFOLDER, SIMPLE_FOLDER, SUBGRAPH_FOLDER)
-from glocal_settings import SMALL, SMALL_SIZE
 from torch.utils.data import DataLoader, Dataset
 from torch_geometric.data import Batch, Data
 from transformers import AutoTokenizer
-from utils import get_logger, seed_everything, set_global_log_level
+
+from constants import (BERT_LAST_LAYER_DIM, DATA_PATH, DATA_SPLIT_FILENAMES, EMBEDDINGS_FILENAME, SUBGRAPH_FOLDER)
+from glocal_settings import SMALL, SMALL_SIZE
+from utils import get_logger
 
 logger = get_logger(__name__)
 
 
-def get_df(data_split, full=True, small=None):
+def get_df(data_split, small=None):
     """
     Read and returns a dataframe of the dataset.
 
     Args:
         data_split (str): Which datasplit to load, in `train`, `val` or `test`
-        full (bool, optional): Wether to use the full dataset or the simple one. Defaults to True.
         small (bool): Pass to override `SMALL`.
 
     Raises:
@@ -36,11 +35,7 @@ def get_df(data_split, full=True, small=None):
     if small is None:
         small = SMALL
 
-    if full:
-        intermediary_path = FULL_FOLDER
-    else:
-        intermediary_path = SIMPLE_FOLDER
-    path = Path(DATA_PATH) / intermediary_path / DATA_SPLIT_FILENAMES[data_split]
+    path = Path(DATA_PATH) / DATA_SPLIT_FILENAMES[data_split]
     df = pd.read_csv(path)
     if small:
         df = df[:SMALL_SIZE]
@@ -71,7 +66,7 @@ def get_subgraphs(data_split, subgraph_type):
         raise ValueError(f"Argument `subgraph_type` must be in {subgraph_choices}. Was {subgraph_type}. ")
 
     filename = "subgraphs_" + subgraph_type + "_" + data_split + ".pkl"
-    path = Path(SAVE_DATAFOLDER) / SUBGRAPH_FOLDER / filename
+    path = Path(DATA_PATH) / SUBGRAPH_FOLDER / filename
     df = pd.read_pickle(path)
     if SMALL:
         df = df[:SMALL_SIZE]
@@ -116,7 +111,7 @@ def get_precomputed_embeddings():
     Returns:
         dict: The dict of the subgraphs (as strings).
     """
-    path = Path(SAVE_DATAFOLDER) / EMBEDDINGS_FILENAME
+    path = Path(DATA_PATH) / EMBEDDINGS_FILENAME
     embedding_dict = pickle.load(open(path, "rb"))
     return embedding_dict
 
@@ -180,7 +175,7 @@ def get_dataloader(data_split, subgraph_type=None, subgraph_to_use="discovered",
     Returns:
         DataLoader: The dataloader.
     """
-    df = get_df(data_split, full=True)
+    df = get_df(data_split)
     if subgraph_type is not None:
         subgraphs = get_subgraphs(data_split, subgraph_type)
         choices = ["discovered", "connected", "walkable"]
@@ -382,7 +377,7 @@ def get_graph_dataloader(
     Returns:
         DataLoader: The dataloader.
     """
-    df = get_df(data_split, full=True)
+    df = get_df(data_split)
     subgraphs = get_subgraphs(data_split, subgraph_type)
 
     tokenizer = AutoTokenizer.from_pretrained(bert_model_name)
