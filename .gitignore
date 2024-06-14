@@ -7,3 +7,4 @@ models/
 notes.txt
 glocal_settings.py
 Makefile
+*.pdf

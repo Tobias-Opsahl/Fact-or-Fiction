@@ -21,7 +21,7 @@ def get_args():
     parser.add_argument("--learning_rate", type=float, default=0.00001, help="learning rate")
     parser.add_argument("--n_epochs", type=int, default=5, help="The amount of epochs to train for. ")
     parser.add_argument("--qa_gnn", action="store_true", help="Will use QA-GNN model. If not, will fine tune Bert.")
-    parser.add_argument("--use_roberta", actiona="store_true", help="Use RoBERTa instead of BERT. ")
+    parser.add_argument("--use_roberta", action="store_true", help="Use RoBERTa instead of BERT. ")
 
     parser.add_argument("--freeze_base_model", action="store_true", help="Freeze bert base model. ")
     parser.add_argument("--freeze_up_to_pooler", action="store_true", help="Freeze bert up to last pooling layer. ")
