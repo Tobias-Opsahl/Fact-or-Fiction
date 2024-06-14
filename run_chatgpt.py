@@ -170,15 +170,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    seed_everything(57)  # Allow for different sample of same size
+    seed_everything(57)
     sub_sizes = [25, 50, 100]
 
     if args.evaluate:
         logger.info("Evaluating answers...")
         all_results = evaluate_answers(
             dataset_type=args.dataset_type, sample_size=args.sample_size, sub_sizes=sub_sizes, n_runs=args.n_runs)
-        from IPython import embed
-        embed()
     else:
         logger.info("Drawing sample...")
         draw_sample(dataset_type=args.dataset_type, sample_size=args.sample_size,

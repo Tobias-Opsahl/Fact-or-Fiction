@@ -74,29 +74,21 @@ BERT (no subgraphs): `python run_stuff.py baseline_no_evidence --subgraph_type n
 
 ### ChatGPT prompting
 
-There are code aviable in `make_chatgpt_prompt.py` to create the ChatGPT prompts easily, text files for the prompts and answers can be found in `chatgpt/`. Run:
+The code for running the ChatGPT experiments is in `run_chatgpt.py`, while text files for the prompts and answers can be found in `chatgpt/`.
+
+If one wish to create a new prompt with new questions, run:
 
 ```cli
-python make_chatgpt_prompt.py --dataset_type val --sample_size 20 --prompt_path base_prompt2.txt --destination_path sample.txt --seed_offset 0
+python run_chatgpt.py --dataset_type val --sample_size 100 --prompt_path base_prompt.txt
 ```
 
-This will add 20 validation questions to the prompt found in `base_prompt.txt`, saved in `sample.txt`. It will also save the rest of the dataframe (including the labels) as `sample_df.pkl`. If one wishes to have different samples of the same size, use different numbers of `--seed_offset`. If one wishes to change the prompt, make changes and send the prompt's path as `--prompt_path`.
+where you can change `val` to `train` or `test` to draw from the respective split, and `base_prompt.txt` can be changed to another file in `chatgpt/` that contains the base prompt.
 
-The prompt (as in `sample.txt`) was manually copy pasted into ChatGPT 4's website. The answers were manually copy pasted into answer text files. To evaluate an answer (after saving the answers), run:
+The prompt with questions created was manually copy pasted into ChatGPT 4's website. The answers were manually copy pasted into answer text files. The folder contains the answers and questions for three runs of 100 drawn test questions, both with a split of 20, 50 and 100 questions at a time. To evaluate everything, run:
 
 ```cli
-python make_chatgpt_prompt.py --answers_path test_answers_q20_1.txt --labels_path test_answers_q20_df.pkl
+python run_chatgpt.py --evaluate --n_runs 3
 ```
-
-Changing the paths to how the answers are saved and what the dataframe was saved as. The reading assumes all files lie in `chatgpt/`.
-
-Both the test prompts and answers used in the paper are provided in `chatgpt/`. To evaluate on all of it, run:
-
-```cli
-python make_chatgpt_prompt.py --evaluate_tests --n_questions_eval 20
-```
-
-Where 20 can be changed to 50 for the 50 question version.
 
 ### Thank You
 
