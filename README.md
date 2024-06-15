@@ -21,14 +21,14 @@ Chech the [FactKG paper](https://arxiv.org/pdf/2104.06378) for more information 
 
 Tip: Try setting `SMALL` to `True` in `glocal_settings.py` to test the runs really fast, since this index only a small part of the dataset.
 
+Note: Because of the simple subgraph retrivals, the DBpedia knowledge graph is only used during preprocessing when finding the subgraphs. If the subgraphs are provided already, the DBpedia knowledge graph is not needed.
+
 ### Preprocess
 
-Two preprocessing steps are necessary:
+If the subgraphs and embeddings file are already provided, the following steps can be skipped. If not, two preprocessing steps are necessary:
 
-1. Retrieve the subgraphs (which is a non-trainable procedure that can be precomputed for each datapoint). Takes a couple of minutes, can be done on CPU.
-2. For QA-GNN, precompute the embeddings for the nodes and the edges. Takes 20-60 minutes. Should only be done with CUDA.
-
-Both of them needs the `DBpedia` knowledge graph, which takes a couple mintues to load. After preprocessing, the knowledge graph is not needed anymore (for training and evaluation).
+1. Retrieve the subgraphs (which is a non-trainable procedure that can be precomputed for each datapoint). Takes a couple of minutes, can be done on CPU. This uses the DBpedia knowledge graph.
+2. For QA-GNN, precompute the embeddings for the nodes and the edges. Takes 20-60 minutes. Should only be done with CUDA. This uses the subgraphs found in the previous step.
 
 For 1., one can use this script:
 
