@@ -7,7 +7,6 @@ from pathlib import Path
 import numpy as np
 import torch
 from constants import RESULTS_FOLDER, SAVED_MODEL_FOLDER
-from glocal_settings import ML_NODES
 
 
 def set_global_log_level(level):
@@ -61,12 +60,6 @@ def seed_everything(seed=57):
     torch.backends.cudnn.benchmark = False
     os.environ["PYTHONHASHSEED"] = str(seed)
     torch.mps.manual_seed(seed)
-    if ML_NODES:
-        torch.backends.cudnn.deterministic = False
-        torch.use_deterministic_algorithms(False)
-    else:
-        torch.backends.cudnn.deterministic = True
-        torch.use_deterministic_algorithms(True)
 
 
 def count_parameters(model):
