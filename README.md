@@ -25,7 +25,7 @@ Note: Because of the simple subgraph retrivals, the DBpedia knowledge graph is o
 
 ### Preprocess
 
-If the subgraphs and embeddings file are already provided, the following steps can be skipped. If not, two preprocessing steps are necessary:
+If the subgraphs and embeddings file are already provided, the following steps can be skipped, and one can go directly to the training section. If the subgraphs are provided, but not the embedding file, one can skip step 1, but not 2. If none are provided, two preprocessing steps are necessary:
 
 1. Retrieve the subgraphs (which is a non-trainable procedure that can be precomputed for each datapoint). Takes a couple of minutes, can be done on CPU. This uses the DBpedia knowledge graph.
 2. For QA-GNN, precompute the embeddings for the nodes and the edges. Takes 20-60 minutes. Should only be done with CUDA. This uses the subgraphs found in the previous step.
