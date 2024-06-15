@@ -142,7 +142,7 @@ def evaluate_answers(dataset_type, sample_size=100, sub_sizes=[25, 50, 100], n_r
         total_accuracy = np.zeros(n_runs)
         for i in range(int(sample_size / sub_size)):
             sub_df = sample_df.iloc[(i * sub_size): ((i + 1) * sub_size)]
-            labels = sub_df["Label"].values
+            labels = np.array([label[0] for label in sub_df["Label"]])
             for j in range(n_runs):
                 answers_filename = "answers_n" + str(i + 1) + "_r" + str(j + 1) + ".txt"
                 file_path = Path(CHAT_GPT_FOLDER) / dataset_type / sub_size_foldername / answers_filename

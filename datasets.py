@@ -323,7 +323,7 @@ class FactKGDatasetGraph(Dataset):
             message = "Argument `embedding_dict` can not be `None` when `online_embeddings` is False."
             raise ValueError(message)
         self.inputs = df["Sentence"]
-        self.labels = df["Label"].astype(int)
+        self.labels = [int(label[0]) for label in df["Label"]]
         self.length = len(df)
         self.subgraphs = evidence["walked"]
         self.evidence = evidence["subgraph"]
