@@ -5,10 +5,8 @@ import pickle
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 from constants import CHAT_GPT_FOLDER
 from datasets import get_df
-from evaluate import evaluate_chatgpt
 from utils import get_logger, seed_everything, set_global_log_level
 
 logger = get_logger(__name__)
