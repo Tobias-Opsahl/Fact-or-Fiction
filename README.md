@@ -91,7 +91,7 @@ where you can change `val` to `train` or `test` to draw from the respective spli
 The prompt with questions created was manually copy pasted into ChatGPT 4's website. The answers were manually copy pasted into answer text files. The folder contains the answers and questions for three runs of 100 drawn test questions, both with a split of 20, 50 and 100 questions at a time. To evaluate everything, run:
 
 ```cli
-python run_chatgpt.py --evaluate --n_runs 3
+python run_chatgpt.py --dataset_type test --evaluate --n_runs 3
 ```
 
 ### Thank You
