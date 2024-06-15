@@ -1,3 +1,4 @@
+import os
 import pickle
 from pathlib import Path
 
@@ -7,7 +8,8 @@ from torch.utils.data import DataLoader, Dataset
 from torch_geometric.data import Batch, Data
 from transformers import AutoTokenizer
 
-from constants import (BERT_LAST_LAYER_DIM, DATA_PATH, DATA_SPLIT_FILENAMES, EMBEDDINGS_FILENAME, SUBGRAPH_FOLDER)
+from constants import (BERT_LAST_LAYER_DIM, DATA_PATH, DATA_SPLIT_FILENAMES, EMBEDDINGS_FILENAME, FACTKG_FOLDER,
+                       SUBGRAPH_FOLDER)
 from glocal_settings import SMALL, SMALL_SIZE
 from utils import get_logger
 
@@ -35,10 +37,14 @@ def get_df(data_split, small=None):
     if small is None:
         small = SMALL
 
-    path = Path(DATA_PATH) / DATA_SPLIT_FILENAMES[data_split]
-    df = pd.read_csv(path)
+    path = Path(DATA_PATH) / FACTKG_FOLDER / DATA_SPLIT_FILENAMES[data_split]
+    df = pd.DataFrame.from_dict(pd.read_pickle(path), orient="index")
+    df.reset_index(inplace=True)  # Fix so sentences are a column, not index
+    df.rename(columns={"index": "Sentence"}, inplace=True)
+
     if small:
         df = df[:SMALL_SIZE]
+
     return df
 
 
@@ -67,6 +73,18 @@ def get_subgraphs(data_split, subgraph_type):
 
     filename = "subgraphs_" + subgraph_type + "_" + data_split + ".pkl"
     path = Path(DATA_PATH) / SUBGRAPH_FOLDER / filename
+
+    if SMALL and not os.path.isfile(path):
+        if SMALL:
+            filename = "small_" + filename
+            path = Path(DATA_PATH) / SUBGRAPH_FOLDER / filename
+
+    if not os.path.isfile(path):
+        message = f"Subgraph file for {data_split=} and {subgraph_type=} does not exist, or is in the wrong folder."
+        message += f"Tried to look for {path}. Please create subgraphs with `python retrieve_subgraphs.py "
+        message += "--dataset_type all --method relevant. See README.md for more information"
+        raise FileNotFoundError(message)
+
     df = pd.read_pickle(path)
     if SMALL:
         df = df[:SMALL_SIZE]
@@ -126,7 +144,7 @@ class FactKGDataset(Dataset):
         """
 
         self.inputs = df["Sentence"]
-        self.labels = df["Label"].astype(int)
+        self.labels = [int(label[0]) for label in df["Label"]]
         self.length = len(df)
 
         if evidence is not None:

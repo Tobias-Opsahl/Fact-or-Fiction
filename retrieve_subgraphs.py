@@ -1,5 +1,4 @@
 import argparse
-import ast
 import csv
 import os
 import pickle
@@ -10,10 +9,10 @@ import pandas as pd
 import spacy
 from nltk.corpus import stopwords
 
-from baseline.kg import KG
-from constants import (DATA_PATH, DBPEDIA_FOLDER, DBPEDIA_LIGHT_FILENAME, SUBGRAPH_FOLDER, TEST_FILENAME,
-                       TRAIN_FILENAME, VAL_FILENAME)
-from glocal_settings import SMALL, SMALL_SIZE
+from constants import DATA_PATH, DBPEDIA_FOLDER, DBPEDIA_LIGHT_FILENAME, SUBGRAPH_FOLDER
+from datasets import get_df
+from glocal_settings import SMALL
+from kg import KG
 from utils import get_logger, set_global_log_level
 
 logger = get_logger(__name__)
@@ -145,7 +144,7 @@ def find_subgraphs(kg, df, method="direct", fill_if_empty=False):
         logger.debug(f"On idx {idx + 1}/{n_datapoints}")
         if ((idx + 1) % 100) == 0:
             logger.info(f"On idx {idx + 1}/{n_datapoints}")
-        entities = ast.literal_eval(df["Entity_set"][idx])
+        entities = df["Entity_set"][idx]
         if method == "direct":
             subgraph = kg.get_direct_subgraph(entities, fill_if_empty=fill_if_empty)
         elif method == "one_hop":
@@ -213,14 +212,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.dataset_type == "train":
-        filenames = [TRAIN_FILENAME]
-    elif args.dataset_type == "val":
-        filenames = [VAL_FILENAME]
-    elif args.dataset_type == "test":
-        filenames = [TEST_FILENAME]
-    elif args.dataset_type == "all":
-        filenames = [TRAIN_FILENAME, VAL_FILENAME, TEST_FILENAME]
+    if args.dataset_type == "all":
+        dataset_types = ["train", "val", "test"]
+    else:
+        datasety_types = [args.dataset_type]
 
     kg_path = Path(DATA_PATH) / DBPEDIA_FOLDER / DBPEDIA_LIGHT_FILENAME
     logger.info("Loading knowledge graph...")
@@ -231,11 +226,8 @@ if __name__ == "__main__":
 
     save_folder = Path(DATA_PATH) / SUBGRAPH_FOLDER
     os.makedirs(save_folder, exist_ok=True)
-    for filename in filenames:
-        df_path = Path(DATA_PATH) / filename
-        df = pd.read_csv(df_path)
-        if SMALL:
-            df = df[:SMALL_SIZE]
+    for dataset_type in dataset_types:
+        df = get_df(data_split=dataset_type)
 
         if args.method == "direct":
             if args.fill_if_empty:
@@ -247,7 +239,7 @@ if __name__ == "__main__":
         elif args.method == "relevant":
             method_name = "relevant"
 
-        save_filename = "subgraphs_" + method_name + "_" + filename
+        save_filename = "subgraphs_" + method_name + "_" + dataset_type + ".pkl"
         save_filename = save_filename.replace(".csv", ".pkl")
         if SMALL:
             save_filename = "small_" + save_filename
