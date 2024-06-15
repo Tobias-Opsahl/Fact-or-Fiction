@@ -7,13 +7,17 @@ The paper assesses the performance of various language models at the [FactKG](ht
 
 ## Requirements
 
-The code requires `pandas`, `pytorch`, `numpy`, `transformers`, in addition to `pytorch_geometric` for QA-GNNs, and `nltk` and `spacy` for the contextulized embeddings. Additionally, one have to run `python -m spacy download en_core_web_sm` to download the embeddings (it does not take long).
+The code requires `pandas`, `pytorch`, `numpy`, `transformers`, in addition to `pytorch_geometric` for QA-GNNs, and `nltk` and `spacy` for the contextulized subgraphs (not needed for single-step or direct subgraphs). Additionally, one have to run `python -m spacy download en_core_web_sm` to download the embeddings (it does not take long).
 
 ## Running the code
 
-Before training the models, one needs to run some preprocessing of the datasets. The `.csv` file from the FactKG dataset should be downloaded and put in `./data/` (or change the path in `constants.py`). One also needs the `DBpedia` knowledge graph (for preprocessing only, not training). The FactKG dataset provides a light version of DBpedia that is recommened to use. All the paths are saved in `constants.py`, so please make sure that these corresponds to your paths.
+### Download the data
 
-Chech the [FactKG paper](https://arxiv.org/pdf/2104.06378) to download the data.
+Please go [here](https://drive.google.com/drive/folders/1q0_MqBeGAp5_cBJCBf_1alYaYm14OeTk) to download the data. Use the `dbpedia_undirected_light.pickle` and `factkg.zip`. The light version was used in these experiments, so use it rather than the full knowledge graph in order to recreate the findings. The DBpedia knowledge graph is only used during preprocessing, not training or evaluating.
+
+Unzip `factkg.zip` in `data/`, so that the `.pickle` files are saved in `data/factkg/`. Put the DBpedia `.pickle` file in `data/dbpedia/`. One can also change the paths and folder names in `constants.py`.
+
+Chech the [FactKG paper](https://arxiv.org/pdf/2104.06378) for more information about the dataset.
 
 Tip: Try setting `SMALL` to `True` in `glocal_settings.py` to test the runs really fast, since this index only a small part of the dataset.
 
@@ -32,7 +36,7 @@ For 1., one can use this script:
 python retrieve_subgraphs.py --dataset_type all --method relevant
 ```
 
-This will generate csv files locally in `./data/subgraphs/`. Changing `all` to `train`, `val` or `test` will only generate subgraphs for the respective split. The method `relevant` can be changed to `direct` or `one_hop`, for different retrival methods described in the paper. The `relevant` methods is the same as `contextualised` in the paper, and `one_hop` refers to `single-step`. If one wishes to create subgraphs for all three methods, one needs to run the line above three times.
+It takes a little while to load the knowledge graph (2-5 minutes), but the subgraph creations goes pretty fast. This will generate csv files locally in `./data/subgraphs/`. Changing `all` to `train`, `val` or `test` will only generate subgraphs for the respective split. The method `relevant` can be changed to `direct` or `one_hop`, for different retrival methods described in the paper. The `relevant` methods is the same as `contextualised` in the paper, and `one_hop` refers to `single-step`. If one wishes to create subgraphs for all three methods, one needs to run the line above three times.
 
 For 2., one can run:
 
