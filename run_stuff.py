@@ -7,7 +7,7 @@ from datasets import get_dataloader, get_graph_dataloader
 from evaluate import evaluate_on_test_set
 from glocal_settings import SMALL, SMALL_SIZE
 from models import QAGNN, get_bert_model
-from train import run_epoch_qa_gnn, run_epoch_simple, train
+from train import train
 from utils import get_logger, save_history, seed_everything, set_global_log_level, load_state_dict
 
 logger = get_logger(__name__)
@@ -127,12 +127,14 @@ if __name__ == "__main__":
         history = {}
     test_results = evaluate_on_test_set(
         args.qa_gnn, model=model, test_loader=test_loader, criterion=criterion, device=device)
-    test_accuracy = test_results["total_test_accuracy"]
-    average_test_loss = test_results["average_test_loss"]
+
+    test_accuracy = test_results["overall"]["accuracy"]
+    average_test_loss = test_results["overall"]["loss"]
     history["test_accuracy"] = test_accuracy
     history["test_results"] = test_results
     if not args.evaluate_only:
-        dataset_size = "full" if not SMALL else SMALL_SIZE
-        save_history(args.model_name, history, dataset_size=dataset_size)
+        save_history(args.model_name, history)
+    else:
+        save_history("eval_" + args.model_name, history)
     logger.info(f"Model \"{args.model_name}\": Test accuracy: {test_accuracy * 100:.4f}%, {average_test_loss=:.4f}. ")
     logger.info(f"{test_results=}")

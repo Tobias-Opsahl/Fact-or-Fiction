@@ -161,34 +161,32 @@ def load_state_dict(model_path, device=None):
     return state_dict
 
 
-def save_history(model_name, history, dataset_size="full"):
+def save_history(model_name, history):
     """
     Save a history dictionary from training.
 
     Args:
         model_name (str): The name of the model whos history is being loaded.
         history (dict): The histories to save.
-        dataset_size (str): The size of the dataset used.
     """
-    folder_name = Path(RESULTS_FOLDER) / str(dataset_size)
+    folder_name = Path(RESULTS_FOLDER)
     filename = model_name + "_history.pkl"
     file_path = make_file_path(folder_name, filename, check_folder_exists=True)
     with open(file_path, "wb") as outfile:
         pickle.dump(history, outfile)
 
 
-def load_history(model_name, dataset_size="full"):
+def load_history(model_name):
     """
     Load models history, made by `src/evaluation.py`.
 
     Args:
         model_name (str): The name of the model whos history is being loaded.
-        dataset_size (str): The size of the dataset used.
 
     Returns:
         dict: Dictionary of history
     """
-    folder_name = Path(RESULTS_FOLDER) / str(dataset_size)
+    folder_name = Path(RESULTS_FOLDER)
     filename = model_name + "_history.pkl"
     file_path = make_file_path(folder_name, filename, check_folder_exists=False)
     history = pickle.load(open(file_path, "rb"))
