@@ -5,9 +5,39 @@ Language Models*.
 
 The paper assesses the performance of various language models at the [FactKG](https://arxiv.org/pdf/2104.06378) dataset. It tests a finetuned BERT, trains a [question answer graph neural network (QA-GNN)](https://arxiv.org/pdf/2104.06378) and prompts ChatGPT. The subgraph retrival method utilises simple logical methods, which are cheap to perform and resulted in improved performance. The QA-GNN trains efficiently due to frozen node and edge embeddings which can be computed in advance, and only once.
 
-## Requirements
+## Dependencies
 
-The code requires `pandas`, `pytorch`, `numpy`, `transformers`, in addition to `pytorch_geometric` for QA-GNNs, and `nltk` and `spacy` for the contextulized subgraphs (not needed for single-step or direct subgraphs). Additionally, one have to run `python -m spacy download en_core_web_sm` to download the embeddings (it does not take long).
+The code requires `pandas`, `pytorch`, `numpy`, `transformers`, in addition to `pytorch_geometric` for QA-GNNs, and `nltk` and `spacy` for the contextulized subgraphs (not needed for single-step or direct subgraphs).
+
+One has to run `python -m spacy download en_core_web_sm` to download the embeddings (it does not take long)
+
+Here are the specific versions of the libraries used:
+
+- **Numpy:** 1.25.2
+- **Matplotlib:** 3.5.3
+- **PyTorch:** 2.0.1
+- **Pytorch Geometric**: 2.5.3
+- **Pandas:** 2.2.2
+- **Transformers:** 4.40.2
+- **Scikit-learn:** 1.4.2
+- **nltk:** 3.8.1
+- **spacy** 3.7.4
+
+and **Python** version 3.10.12.
+
+### Installing Dependencies with Conda
+
+- Run `conda env create -f environment.yaml` to create the conda environment.
+- Run `conda activate fact_or_fiction_env` to activate the environment.
+
+### Installing Dependencies with pip
+
+- (Optional, but recommended) Create a virtual environment:
+  - `python -m venv fact_or_fiction_venv`
+  - Activate the environment:
+    - On Windows: `fact_or_fiction_venv\Scripts\activate`
+    - On macOS and Linux: `source fact_or_fiction_venv/bin/activate`
+- Install the required packages: `pip install -r requirements.txt`
 
 ## Running the code
 
